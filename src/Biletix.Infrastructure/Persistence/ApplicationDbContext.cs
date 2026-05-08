@@ -9,13 +9,20 @@ namespace Biletix.Infrastructure.Persistence;
 /// <summary>
 /// Uygulamanin EF Core veritabani baglamidir; audit alanlarini set eder ve domain event'leri yayinlar.
 /// </summary>
-/// <remarks>
-/// Veritabani baglami icin EF Core ayarlarini ve domain event yayini icin mediator'u alir.
-/// </remarks>
-/// <param name="options">DbContext konfigurasyonu.</param>
-/// <param name="mediator">Domain event'leri yayinlamak icin kullanilan mediator.</param>
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator) : DbContext(options)
+public class ApplicationDbContext : DbContext
 {
+    private readonly IMediator _mediator;
+
+    /// <summary>
+    /// Veritabani baglami icin EF Core ayarlarini ve domain event yayini icin mediator'u alir.
+    /// </summary>
+    /// <param name="options">DbContext konfigurasyonu.</param>
+    /// <param name="mediator">Domain event'leri yayinlamak icin kullanilan mediator.</param>
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator)
+        : base(options)
+    {
+        _mediator = mediator;
+    }
 
     /// <summary>
     /// Mekan aggregate'leri icin sorgu ve kalicilik giris noktasi.
@@ -84,7 +91,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             foreach (var domainEvent in domainEvents)
             {
-                await mediator.Publish(domainEvent, cancellationToken);
+                await _mediator.Publish(domainEvent, cancellationToken);
             }
 
             aggregateRoot.ClearDomainEvents();

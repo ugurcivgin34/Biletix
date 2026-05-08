@@ -8,12 +8,19 @@ namespace Biletix.Application.Common.Behaviours;
 /// </summary>
 /// <typeparam name="TRequest">Dogrulanacak request tipi.</typeparam>
 /// <typeparam name="TResponse">Request sonucunda donen response tipi.</typeparam>
-/// <remarks>
-/// Request tipi icin kayitli tum validator'lari alir.
-/// </remarks>
-/// <param name="validators">Request uzerinde calistirilacak validator listesi.</param>
-public class ValidationBehaviour<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
+public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
+    private readonly IEnumerable<IValidator<TRequest>> _validators;
+
+    /// <summary>
+    /// Request tipi icin kayitli tum validator'lari alir.
+    /// </summary>
+    /// <param name="validators">Request uzerinde calistirilacak validator listesi.</param>
+    public ValidationBehaviour(IEnumerable<IValidator<TRequest>> validators)
+    {
+        _validators = validators;
+    }
 
     /// <summary>
     /// Validator yoksa request'i devam ettirir; hata varsa ValidationException firlatir.
@@ -27,14 +34,14 @@ public class ValidationBehaviour<TRequest, TResponse>(IEnumerable<IValidator<TRe
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (!validators.Any())
+        if (!_validators.Any())
         {
             return await next();
         }
 
         var context = new ValidationContext<TRequest>(request);
         var validationResults = await Task.WhenAll(
-            validators.Select(validator => validator.ValidateAsync(context, cancellationToken)));
+            _validators.Select(validator => validator.ValidateAsync(context, cancellationToken)));
 
         var failures = validationResults
             .SelectMany(result => result.Errors)

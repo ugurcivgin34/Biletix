@@ -9,12 +9,19 @@ namespace Biletix.Application.Common.Behaviours;
 /// </summary>
 /// <typeparam name="TRequest">Pipeline'dan gecen request tipi.</typeparam>
 /// <typeparam name="TResponse">Request sonucunda donen response tipi.</typeparam>
-/// <remarks>
-/// Logging behavior icin gerekli logger bagimliligini alir.
-/// </remarks>
-/// <param name="logger">Request loglarini yazacak logger.</param>
-public class LoggingBehaviour<TRequest, TResponse>(ILogger<LoggingBehaviour<TRequest, TResponse>> logger) : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
+public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
+    private readonly ILogger<LoggingBehaviour<TRequest, TResponse>> _logger;
+
+    /// <summary>
+    /// Logging behavior icin gerekli logger bagimliligini alir.
+    /// </summary>
+    /// <param name="logger">Request loglarini yazacak logger.</param>
+    public LoggingBehaviour(ILogger<LoggingBehaviour<TRequest, TResponse>> logger)
+    {
+        _logger = logger;
+    }
 
     /// <summary>
     /// Request'i bir sonraki pipeline adimina iletirken calisma suresini olcer ve loglar.
@@ -30,7 +37,7 @@ public class LoggingBehaviour<TRequest, TResponse>(ILogger<LoggingBehaviour<TReq
     {
         var requestName = request.GetType().Name;
 
-        logger.LogInformation("Handling request: {Name}", requestName);
+        _logger.LogInformation("Handling request: {Name}", requestName);
 
         var stopwatch = Stopwatch.StartNew();
         var response = await next();
@@ -38,11 +45,11 @@ public class LoggingBehaviour<TRequest, TResponse>(ILogger<LoggingBehaviour<TReq
 
         var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
-        logger.LogInformation("Handled request: {Name} ({Elapsed}ms)", requestName, elapsedMilliseconds);
+        _logger.LogInformation("Handled request: {Name} ({Elapsed}ms)", requestName, elapsedMilliseconds);
 
         if (elapsedMilliseconds > 500)
         {
-            logger.LogWarning("Long running request: {Name} ({Elapsed}ms)", requestName, elapsedMilliseconds);
+            _logger.LogWarning("Long running request: {Name} ({Elapsed}ms)", requestName, elapsedMilliseconds);
         }
 
         return response;

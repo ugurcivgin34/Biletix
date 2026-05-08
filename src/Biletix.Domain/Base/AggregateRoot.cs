@@ -6,7 +6,7 @@ namespace Biletix.Domain.Base;
 /// <typeparam name="TId">Aggregate kokunun kimlik tipi.</typeparam>
 public abstract class AggregateRoot<TId> : BaseEntity<TId>
 {
-    private readonly List<IDomainEvent> _domainEvents = [];
+    private readonly List<IDomainEvent> _domainEvents = new();
 
     /// <summary>
     /// Aggregate icinde gerceklesen bir domain event'i daha sonra yayinlanmak uzere listeye ekler.
