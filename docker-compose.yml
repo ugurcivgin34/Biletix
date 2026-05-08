@@ -1,0 +1,196 @@
+services:
+  # PostgreSQL ana transactional veritabani.
+  # wal_level=logical ayari Debezium gibi CDC araclarinin degisiklikleri okuyabilmesi icin gerekli.
+  postgres:
+    image: postgres:16-alpine
+    container_name: biletix-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: biletix
+      POSTGRES_USER: biletix
+      POSTGRES_PASSWORD: biletix123
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U biletix -d biletix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - biletix-network
+
+  # Redis cache, distributed lock veya kisa omurlu veri saklama senaryolari icin kullanilir.
+  # allkeys-lru politikasi bellek doldugunda en az kullanilan key'leri temizler.
+  redis:
+    image: redis:7-alpine
+    container_name: biletix-redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - biletix-network
+
+  # Kafka'nin broker metadata ve koordinasyon ihtiyaclari icin Zookeeper servisi.
+  # Confluent 7.5 imajlari KRaft yerine bu kurulumda Zookeeper ile calisir.
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: biletix-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - biletix-network
+
+  # Event streaming altyapisi.
+  # Container ici servisler kafka:29092 ile, host makine ise localhost:9092 ile baglanir.
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: biletix-kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - biletix-network
+
+  # Kafka ayaga kalktiktan sonra local development topic'lerini olusturan tek seferlik init servisi.
+  # Script idempotent calisir; topic varsa tekrar olusturmaz.
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: biletix-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init-kafka-topics.sh:/init-kafka-topics.sh:ro
+    command: ["bash", "/init-kafka-topics.sh"]
+    networks:
+      - biletix-network
+
+  # Kafka topic, mesaj ve consumer group'larini tarayabilmek icin web arayuzu.
+  # Tarayicidan http://localhost:8080 adresinden acilir.
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: biletix-kafka-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: biletix-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - biletix-network
+
+  # Arama, log veya read-model senaryolari icin tek node Elasticsearch kurulumu.
+  # Local gelistirme kolayligi icin security kapali tutulur.
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: biletix-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - biletix-network
+
+  # Elasticsearch uzerindeki indeksleri ve verileri incelemek icin Kibana arayuzu.
+  # Tarayicidan http://localhost:5601 adresinden acilir.
+  kibana:
+    image: kibana:8.11.0
+    container_name: biletix-kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - biletix-network
+
+  # PostgreSQL degisikliklerini Kafka'ya aktarmak icin Debezium Kafka Connect servisi.
+  # Connector tanimlari REST API uzerinden http://localhost:8083 adresine eklenir.
+  debezium:
+    image: debezium/connect:2.4
+    container_name: biletix-debezium
+    ports:
+      - "8083:8083"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: debezium-biletix
+      CONFIG_STORAGE_TOPIC: debezium.configs
+      OFFSET_STORAGE_TOPIC: debezium.offsets
+      STATUS_STORAGE_TOPIC: debezium.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/connectors || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - biletix-network
+
+networks:
+  # Tum local altyapi servisleri ayni bridge network icinde birbirlerini servis adlariyla gorebilir.
+  biletix-network:
+    driver: bridge
+
+volumes:
+  # Named volume'lar container silinse bile local verinin korunmasini saglar.
+  postgres_data:
+  redis_data:
+  zookeeper_data:
+  kafka_data:
+  elasticsearch_data:
