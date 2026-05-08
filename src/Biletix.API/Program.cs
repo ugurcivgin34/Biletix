@@ -1,9 +1,15 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Biletix.API.Common;
 using Biletix.API.Middleware;
+using Biletix.API.Services;
 using Biletix.Application;
+using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure;
+using Biletix.Infrastructure.Auth;
+using Biletix.Infrastructure.Persistence;
+using Biletix.Infrastructure.Persistence.Seeders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -32,10 +38,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
+    options.AddPolicy("OrganizerOrAdmin", policy =>
+        policy.RequireRole("Organizer", "Admin"));
+
+    options.AddPolicy("AuthenticatedUser", policy =>
+        policy.RequireAuthenticatedUser());
+});
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IResourceAuthorizationService, ResourceAuthorizationService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -75,6 +96,13 @@ builder.Services.AddHealthChecks()
     .AddInfrastructureHealthChecks(builder.Configuration);
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+    await AdminSeeder.SeedAsync(context, authService);
+}
 
 app.UseExceptionHandler();
 app.UseMiddleware<CorrelationIdMiddleware>();

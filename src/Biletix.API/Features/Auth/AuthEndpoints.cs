@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Biletix.API.Common;
+using Biletix.Application.Common.Interfaces;
 using Biletix.Application.Features.Auth.Commands.Login;
 using Biletix.Application.Features.Auth.Commands.Logout;
 using Biletix.Application.Features.Auth.Commands.RefreshToken;
@@ -43,6 +44,21 @@ public class AuthEndpoints : IEndpoint
             .RequireAuthorization()
             .WithName("Logout")
             .Produces(StatusCodes.Status204NoContent);
+
+        group.MapGet("/me", Me)
+            .RequireAuthorization()
+            .WithName("Me")
+            .Produces(StatusCodes.Status200OK);
+
+        group.MapGet("/admin-only", AdminOnly)
+            .RequireAuthorization("AdminOnly")
+            .WithName("AdminOnly")
+            .Produces(StatusCodes.Status200OK);
+
+        group.MapGet("/organizer-panel", OrganizerPanel)
+            .RequireAuthorization("OrganizerOrAdmin")
+            .WithName("OrganizerPanel")
+            .Produces(StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> RegisterAsync(RegisterRequest request, ISender sender)
@@ -78,6 +94,27 @@ public class AuthEndpoints : IEndpoint
         });
 
         return Results.Ok(response);
+    }
+
+    private static IResult Me(ICurrentUserService currentUserService)
+    {
+        return Results.Ok(new
+        {
+            userId = currentUserService.UserId,
+            email = currentUserService.Email,
+            role = currentUserService.Role,
+            isAuthenticated = currentUserService.IsAuthenticated
+        });
+    }
+
+    private static IResult AdminOnly()
+    {
+        return Results.Ok(new { message = "Welcome Admin" });
+    }
+
+    private static IResult OrganizerPanel()
+    {
+        return Results.Ok(new { message = "Welcome to Organizer Panel" });
     }
 
     [Authorize]

@@ -97,6 +97,22 @@ public class User : AggregateRoot<Guid>
     }
 
     /// <summary>
+    /// Gecerli bilgilerle Admin rolunde aktif bir kullanici olusturur.
+    /// </summary>
+    /// <param name="email">Admin kullanicinin e-posta adresi.</param>
+    /// <param name="firstName">Admin kullanicinin adi.</param>
+    /// <param name="lastName">Admin kullanicinin soyadi.</param>
+    /// <param name="passwordHash">Hashlenmis sifre.</param>
+    /// <returns>Admin rolundeki yeni kullanici aggregate'i.</returns>
+    public static User CreateAdmin(string email, string firstName, string lastName, string passwordHash)
+    {
+        var user = Create(email, firstName, lastName, passwordHash);
+        user.Role = UserRole.Admin;
+
+        return user;
+    }
+
+    /// <summary>
     /// Son basarili giris zamanini gunceller.
     /// </summary>
     public void UpdateLastLogin()
