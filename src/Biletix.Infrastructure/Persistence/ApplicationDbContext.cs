@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Biletix.Application.Common.Interfaces;
 using Biletix.Domain.Base;
 using Biletix.Domain.Entities;
 using MediatR;
@@ -9,7 +10,7 @@ namespace Biletix.Infrastructure.Persistence;
 /// <summary>
 /// Uygulamanin EF Core veritabani baglamidir; audit alanlarini set eder ve domain event'leri yayinlar.
 /// </summary>
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     private readonly IMediator _mediator;
 
@@ -23,6 +24,11 @@ public class ApplicationDbContext : DbContext
     {
         _mediator = mediator;
     }
+
+    /// <summary>
+    /// Kullanici aggregate'leri icin sorgu ve kalicilik giris noktasi.
+    /// </summary>
+    public DbSet<User> Users => Set<User>();
 
     /// <summary>
     /// Mekan aggregate'leri icin sorgu ve kalicilik giris noktasi.

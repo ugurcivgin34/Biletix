@@ -9,7 +9,9 @@
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="8.*" />
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.*" />
     <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="8.*" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.*" />
     <PackageReference Include="MediatR" Version="12.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -17,6 +19,7 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.*" />
     <PackageReference Include="StackExchange.Redis" Version="2.*" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.*" />
   </ItemGroup>
 
   <PropertyGroup>
