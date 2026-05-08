@@ -15,22 +15,22 @@ public class Venue : AggregateRoot<Guid>
     /// <summary>
     /// Mekanin gorunen adidir.
     /// </summary>
-    public string Name { get; private set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// Mekanin bulundugu sehirdir.
     /// </summary>
-    public string City { get; private set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
 
     /// <summary>
     /// Mekanin acik adresidir.
     /// </summary>
-    public string Address { get; private set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
 
     /// <summary>
     /// Mekanin toplam seyirci kapasitesidir.
     /// </summary>
-    public int Capacity { get; private set; }
+    public int Capacity { get; set; }
 
     /// <summary>
     /// Koltuk veya alan yerlesimini JSON formatinda saklar.
