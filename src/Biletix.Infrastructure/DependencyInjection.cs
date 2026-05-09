@@ -1,5 +1,6 @@
 using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure.Auth;
+using Biletix.Infrastructure.Messaging.Consumers;
 using Biletix.Infrastructure.Persistence;
 using Biletix.Infrastructure.Search;
 using Elastic.Clients.Elasticsearch;
@@ -43,6 +44,7 @@ public static class DependencyInjection
         services.AddSingleton(new ElasticsearchClient(elasticsearchSettings));
         services.AddSingleton<ElasticsearchIndexInitializer>();
         services.AddScoped<IEventSearchService, ElasticsearchEventSearchService>();
+        services.AddHostedService<EventCdcConsumer>();
 
         return services;
     }
