@@ -18,22 +18,27 @@ public class Event : AggregateRoot<Guid>
     /// <summary>
     /// Etkinligin gorunen basligidir.
     /// </summary>
-    public string Title { get; private set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
 
     /// <summary>
     /// Etkinligin detayli aciklamasidir.
     /// </summary>
-    public string Description { get; private set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>
     /// Etkinligin baslangic tarihidir.
     /// </summary>
-    public DateTime StartDate { get; private set; }
+    public DateTime StartDate { get; set; }
 
     /// <summary>
     /// Etkinligin bitis tarihidir.
     /// </summary>
-    public DateTime EndDate { get; private set; }
+    public DateTime EndDate { get; set; }
+
+    /// <summary>
+    /// Etkinligi olusturan organizer veya admin kullanicinin kimligidir.
+    /// </summary>
+    public Guid CreatedBy { get; private set; }
 
     /// <summary>
     /// Etkinligin gerceklestigi mekanin kimligidir.
@@ -63,7 +68,7 @@ public class Event : AggregateRoot<Guid>
     /// <summary>
     /// Etkinlik icin opsiyonel gorsel adresidir.
     /// </summary>
-    public string? ImageUrl { get; private set; }
+    public string? ImageUrl { get; set; }
 
     /// <summary>
     /// Etkinlige ait bilet tiplerini disaridan degistirilemeyecek sekilde dondurur.
@@ -79,6 +84,8 @@ public class Event : AggregateRoot<Guid>
     /// <param name="endDate">Etkinlik bitis tarihi.</param>
     /// <param name="venueId">Mekan kimligi.</param>
     /// <param name="performerId">Performer kimligi.</param>
+    /// <param name="createdBy">Etkinligi olusturan kullanici kimligi.</param>
+    /// <param name="imageUrl">Etkinlik icin opsiyonel gorsel adresi.</param>
     /// <returns>Yeni etkinlik aggregate'i.</returns>
     /// <exception cref="DomainException">Baslik bos veya tarih araligi gecersizse firlatilir.</exception>
     public static Event Create(
@@ -87,7 +94,9 @@ public class Event : AggregateRoot<Guid>
         DateTime startDate,
         DateTime endDate,
         Guid venueId,
-        Guid performerId)
+        Guid performerId,
+        Guid createdBy,
+        string? imageUrl = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -109,7 +118,9 @@ public class Event : AggregateRoot<Guid>
             EndDate = endDate,
             VenueId = venueId,
             PerformerId = performerId,
+            CreatedBy = createdBy,
             Status = EventStatus.Draft,
+            ImageUrl = imageUrl,
             CreatedAt = utcNow,
             UpdatedAt = utcNow
         };

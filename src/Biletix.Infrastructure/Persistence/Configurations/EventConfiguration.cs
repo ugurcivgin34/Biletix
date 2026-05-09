@@ -29,6 +29,9 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(@event => @event.Status)
             .HasConversion<string>();
 
+        builder.Property(@event => @event.CreatedBy)
+            .IsRequired();
+
         builder.Property(@event => @event.ImageUrl)
             .HasMaxLength(500)
             .IsRequired(false);
@@ -51,5 +54,6 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.HasIndex(@event => @event.StartDate);
         builder.HasIndex(@event => @event.Status);
         builder.HasIndex(@event => @event.VenueId);
+        builder.HasIndex(@event => @event.CreatedBy);
     }
 }
