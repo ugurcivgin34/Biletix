@@ -10,6 +10,7 @@ using Biletix.Infrastructure;
 using Biletix.Infrastructure.Auth;
 using Biletix.Infrastructure.Persistence;
 using Biletix.Infrastructure.Persistence.Seeders;
+using Biletix.Infrastructure.Search;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -101,7 +102,10 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+    var elasticsearchInitializer = scope.ServiceProvider.GetRequiredService<ElasticsearchIndexInitializer>();
+
     await AdminSeeder.SeedAsync(context, authService);
+    await elasticsearchInitializer.InitializeAsync();
 }
 
 app.UseExceptionHandler();

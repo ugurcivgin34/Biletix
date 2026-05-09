@@ -1,6 +1,8 @@
 using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure.Auth;
 using Biletix.Infrastructure.Persistence;
+using Biletix.Infrastructure.Search;
+using Elastic.Clients.Elasticsearch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +35,14 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+
+        var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
+        var elasticsearchSettings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))
+            .DefaultIndex("biletix-events");
+
+        services.AddSingleton(new ElasticsearchClient(elasticsearchSettings));
+        services.AddSingleton<ElasticsearchIndexInitializer>();
+        services.AddScoped<IEventSearchService, ElasticsearchEventSearchService>();
 
         return services;
     }
