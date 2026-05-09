@@ -2,6 +2,7 @@ using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure.Auth;
 using Biletix.Infrastructure.Messaging.Consumers;
 using Biletix.Infrastructure.Persistence;
+using Biletix.Infrastructure.Redis;
 using Biletix.Infrastructure.Search;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<ITicketLockService, TicketLockService>();
+        services.AddScoped<IIdempotencyService, IdempotencyService>();
 
         var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
         var elasticsearchSettings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))

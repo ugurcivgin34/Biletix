@@ -92,7 +92,7 @@ public class TicketType : BaseEntity<Guid>
     /// </summary>
     /// <param name="count">Rezerve edilecek bilet sayisi.</param>
     /// <exception cref="DomainException">Yeterli bilet yoksa veya miktar gecersizse firlatilir.</exception>
-    public void Reserve(int count)
+    public void Reserve(int count = 1)
     {
         if (count <= 0)
         {
@@ -101,7 +101,7 @@ public class TicketType : BaseEntity<Guid>
 
         if (AvailableCount < count)
         {
-            throw new DomainException("Not enough available tickets");
+            throw new DomainException($"Not enough available tickets. Available: {AvailableCount}");
         }
 
         ReservedCount += count;
@@ -112,7 +112,7 @@ public class TicketType : BaseEntity<Guid>
     /// Bekleyen rezervasyondan belirtilen miktari serbest birakir.
     /// </summary>
     /// <param name="count">Serbest birakilacak bilet sayisi.</param>
-    public void ReleaseReservation(int count)
+    public void ReleaseReservation(int count = 1)
     {
         ReservedCount = Math.Max(0, ReservedCount - count);
         UpdatedAt = DateTime.UtcNow;
@@ -123,7 +123,7 @@ public class TicketType : BaseEntity<Guid>
     /// </summary>
     /// <param name="count">Kesin satisa cevrilecek bilet sayisi.</param>
     /// <exception cref="DomainException">Miktar gecersizse veya rezervasyon yetersizse firlatilir.</exception>
-    public void ConfirmSale(int count)
+    public void ConfirmSale(int count = 1)
     {
         if (count <= 0)
         {
@@ -132,7 +132,7 @@ public class TicketType : BaseEntity<Guid>
 
         if (ReservedCount < count)
         {
-            throw new DomainException("Not enough reserved tickets");
+            throw new DomainException("Cannot confirm sale: not enough reserved tickets");
         }
 
         ReservedCount -= count;

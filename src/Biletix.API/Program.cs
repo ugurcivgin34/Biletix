@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Biletix.API.Common;
 using Biletix.API.Middleware;
 using Biletix.API.Services;
@@ -24,6 +25,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddScoped<CorrelationIdMiddleware>();
 builder.Services.AddScoped<RequestLoggingMiddleware>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

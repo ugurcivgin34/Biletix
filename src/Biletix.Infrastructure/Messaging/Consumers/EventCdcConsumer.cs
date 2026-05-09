@@ -58,6 +58,7 @@ public sealed class EventCdcConsumer : BackgroundService
     {
         _consumer.Subscribe(Topic);
         _logger.LogInformation("CDC consumer started, listening to {Topic}", Topic);
+        await Task.Yield();
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -66,6 +67,7 @@ public sealed class EventCdcConsumer : BackgroundService
                 var result = _consumer.Consume(TimeSpan.FromSeconds(1));
                 if (result is null)
                 {
+                    await Task.Delay(100, stoppingToken);
                     continue;
                 }
 
