@@ -50,7 +50,7 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
         var cached = await _idempotencyService.GetCachedResponseAsync(request.IdempotencyKey);
         if (cached is not null)
         {
-            return JsonSerializer.Deserialize<BookingResponse>(cached, JsonOptions)!;
+            return JsonSerializer.Deserialize<BookingResponse>(cached, JsonOptions)!; // Cache'ten cevabi al ve don, yeni rezervasyon islemi yapma
         }
 
         var userId = _currentUserService.UserId
@@ -62,20 +62,20 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
 
         if (@event is null)
         {
-            throw new NotFoundException("Event", request.EventId);
+            throw new NotFoundException("Event", request.EventId); 
         }
 
         if (@event.Status != EventStatus.Published)
         {
-            throw new DomainException("Event is not available for booking");
+            throw new DomainException("Event is not available for booking"); // Sadece yayinlanmis etkinlikler rezervasyon yapilabilir, diger durumlarda hata verilir
         }
 
         var lockedTicketTypeIds = new List<Guid>();
 
         try
         {
-            await AcquireLocksAsync(request, @event, userId, lockedTicketTypeIds);
-            ReserveTicketCounts(request, @event);
+            await AcquireLocksAsync(request, @event, userId, lockedTicketTypeIds); // Bilet tipi kilitlerini al, eger herhangi bir kilit alinamazsa tum kilitleri serbest birak ve hata ver
+            ReserveTicketCounts(request, @event); // Bilet tipi rezervasyon miktarlarini guncelle, eger herhangi bir bilet tipi yeterli miktarda kalmadiysa hata verilir
 
             var booking = Booking.Create(userId, request.EventId, request.IdempotencyKey);
             AddBookingItems(request, @event, booking);
@@ -87,17 +87,17 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
             await _idempotencyService.CacheResponseAsync(
                 request.IdempotencyKey,
                 JsonSerializer.Serialize(response, JsonOptions),
-                TimeSpan.FromHours(24));
+                TimeSpan.FromHours(24)); // Cevabi idempotency cache'ine kaydet, bu sayede ayni idempotency key ile gelen sonraki isteklerde yeni rezervasyon islemi yapilmaz, cache'teki cevabi donulur
 
             return response;
         }
         catch
         {
-            if (lockedTicketTypeIds.Count > 0 && !await _idempotencyService.ExistsAsync(request.IdempotencyKey))
+            if (lockedTicketTypeIds.Count > 0 && !await _idempotencyService.ExistsAsync(request.IdempotencyKey)) // Eger herhangi bir kilit alindiysa ve idempotency cache'inde bu islem icin kayit yoksa, alinan kilitleri serbest birak
             {
                 foreach (var ticketTypeId in lockedTicketTypeIds)
                 {
-                    await _ticketLockService.ReleaseLockAsync(ticketTypeId, userId);
+                    await _ticketLockService.ReleaseLockAsync(ticketTypeId, userId); 
                 }
             }
 
@@ -134,6 +134,7 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
         }
     }
 
+    // Etkinlikteki bilet tiplerinin rezervasyon miktarlarini gunceller, eger herhangi bir bilet tipi yeterli miktarda kalmadiysa DomainException firlatir.
     private static void ReserveTicketCounts(ReserveTicketsCommand request, Event @event)
     {
         foreach (var item in request.Items)
@@ -143,6 +144,7 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
         }
     }
 
+    // Rezervasyon nesnesine bilet tipi, adet ve fiyat bilgilerini ekler.
     private static void AddBookingItems(ReserveTicketsCommand request, Event @event, Booking booking)
     {
         foreach (var item in request.Items)
@@ -152,12 +154,14 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
         }
     }
 
+    /// Etkinlikten bilet tipi bilgisi getirir, eger bilet tipi bulunamazsa NotFoundException firlatir.
     private static TicketType GetTicketType(Event @event, Guid ticketTypeId)
     {
         return @event.TicketTypes.FirstOrDefault(ticketType => ticketType.Id == ticketTypeId)
             ?? throw new NotFoundException("TicketType", ticketTypeId);
     }
 
+    // JsonSerializerOptions olusturur, enum degerlerini string olarak serileştirmek icin JsonStringEnumConverter ekler.
     private static JsonSerializerOptions CreateJsonOptions()
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);

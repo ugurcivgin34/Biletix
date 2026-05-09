@@ -113,7 +113,7 @@ public sealed class EventCdcConsumer : BackgroundService
             message.Table,
             message.Id);
 
-        if (!Guid.TryParse(message.Id, out var eventId))
+        if (!Guid.TryParse(message.Id, out var eventId)) 
         {
             return;
         }
@@ -123,7 +123,7 @@ public sealed class EventCdcConsumer : BackgroundService
 
         var isDeleted = message.Op == "d"
             || string.Equals(message.Deleted, "true", StringComparison.OrdinalIgnoreCase)
-            || message.IsDeleted == true;
+            || message.IsDeleted == true; // Debezium'un mesaj formatina ve kullandigi connector'a gore silme bilgisini farkli alanlarda tutabilir, bu nedenle birden fazla kontrol yapıyoruz.
 
         if (isDeleted)
         {

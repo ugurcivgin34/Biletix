@@ -41,7 +41,7 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, LoginResponse>
     /// <returns>Access token ve refresh token iceren cevap modeli.</returns>
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant(); // E-posta adresini normalize et (bosluklari kaldir, kucuk harfe cevir)
         var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == normalizedEmail, cancellationToken);
 
         if (user is null)

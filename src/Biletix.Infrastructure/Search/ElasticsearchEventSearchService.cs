@@ -93,6 +93,7 @@ public sealed class ElasticsearchEventSearchService : IEventSearchService
         return new PagedResult<EventSearchDocument>(items, (int)total, page, pageSize);
     }
 
+    // Arama terimine gore aranacak alanlarda esnek arama yapmak icin kullanilacak sorgu kosullarini olusturur.
     private static List<Query> BuildMustClauses(EventSearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -112,6 +113,7 @@ public sealed class ElasticsearchEventSearchService : IEventSearchService
         };
     }
 
+    // Arama kriterlerine gore filtreleme yapmak icin kullanilacak sorgu kosullarini olusturur.
     private static List<Query> BuildFilterClauses(EventSearchRequest request)
     {
         var filterClauses = new List<Query>();
@@ -163,6 +165,7 @@ public sealed class ElasticsearchEventSearchService : IEventSearchService
         return filterClauses;
     }
 
+    // Arama sonucunu siralamak icin kullanilacak sort opsiyonlarini olusturur.
     private static List<SortOptions> BuildSortOptions(EventSearchRequest request)
     {
         var direction = request.SortDescending ? SortOrder.Desc : SortOrder.Asc;
@@ -184,6 +187,7 @@ public sealed class ElasticsearchEventSearchService : IEventSearchService
         };
     }
 
+    // Elasticsearch isteklerinin basarisiz olmasi durumunda istisna firlatir.
     private static void ThrowIfInvalid(bool isValid, string debugInformation)
     {
         if (!isValid)
