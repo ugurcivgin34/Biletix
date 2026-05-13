@@ -128,6 +128,27 @@ public class Booking : AggregateRoot<Guid>
     }
 
     /// <summary>
+    /// Pending rezervasyon icin odeme saglayicisi payment intent kimligini kaydeder.
+    /// </summary>
+    /// <param name="paymentIntentId">Odeme saglayicisindaki payment intent kimligi.</param>
+    /// <exception cref="DomainException">Rezervasyon pending degilse veya kimlik bos ise firlatilir.</exception>
+    public void SetPaymentIntent(string paymentIntentId)
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            throw new DomainException("Only pending bookings can be assigned a payment intent");
+        }
+
+        if (string.IsNullOrWhiteSpace(paymentIntentId))
+        {
+            throw new DomainException("Payment intent id cannot be empty");
+        }
+
+        PaymentIntentId = paymentIntentId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
     /// Bekleyen rezervasyonu odeme bilgisiyle kesinlestirir.
     /// </summary>
     /// <param name="paymentIntentId">Odeme saglayicisindaki islem kimligi.</param>

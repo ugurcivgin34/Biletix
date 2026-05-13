@@ -61,6 +61,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<BookingItem> BookingItems => Set<BookingItem>();
 
     /// <summary>
+    /// Transactional outbox mesajlari icin sorgu ve kalicilik giris noktasi.
+    /// </summary>
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    /// <summary>
     /// Degisiklikleri kaydetmeden once audit alanlarini gunceller, kayittan sonra domain event'leri yayinlar.
     /// </summary>
     /// <param name="cancellationToken">Asenkron islemi iptal etmek icin kullanilan token.</param>

@@ -10,6 +10,7 @@ obj/
 
 # Local environment values
 .env
+stripe.exe
 
 # Logs
 *.log
