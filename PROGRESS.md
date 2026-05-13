@@ -3,10 +3,10 @@
 ## Proje Hakkında
 .NET 8 Clean Architecture + Minimal API ile yazılmış Biletix/TicketMaster benzeri bilet satış backend sistemi.
 
-Backend kapsamı 7 faz halinde tamamlandı.
+Backend kapsamı tamamlandı. Frontend geliştirme fazı başlıyor.
 
 ## Backend Durumu
-Tamamlandı.
+TAMAMLANDI.
 
 - Domain, Application, Infrastructure ve API katmanları tamamlandı.
 - Auth, RBAC, event/venue yönetimi, arama, booking, queue, payment, saga, outbox, notification, QR ve kapı doğrulama akışları tamamlandı.
@@ -92,44 +92,148 @@ tests/
 - P-25: Rate limiting ve security headers.
 - Not: YARP Gateway eklenmedi; monolitik mimari için gerekli değil.
 
-## Önemli Mimari Kararlar
-1. ITokenService Application katmanında tutuldu; dependency yönü korundu.
-2. EventSearchDocument Application katmanında tutuldu.
-3. Minimal API + IEndpoint pattern kullanıldı.
-4. EF Core soft delete global query filter ile uygulandı.
-5. Transactional outbox ile notification publish güvenli hale getirildi.
-6. Integration testlerde gerçek PostgreSQL ve Redis Testcontainers ile çalışıyor.
-7. OpenTelemetry custom meter Application katmanında tutuldu; Infrastructure tarafında compatibility wrapper var.
-8. appsettings.json secret içermeyecek şekilde temizlendi; gizli değerler environment/user-secrets ile verilmeli.
+## Backend API Endpoint'leri
+
+### Auth
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/auth/logout
+- GET  /api/auth/me
+
+### Venues
+- GET    /api/venues
+- GET    /api/venues/{id}
+- POST   /api/venues (Admin)
+- PUT    /api/venues/{id} (Admin)
+- DELETE /api/venues/{id} (Admin)
+
+### Events
+- GET    /api/events
+- GET    /api/events/{id}
+- GET    /api/events/my (Organizer/Admin)
+- POST   /api/events (Organizer/Admin)
+- PUT    /api/events/{id} (Organizer/Admin)
+- POST   /api/events/{id}/publish
+- POST   /api/events/{id}/cancel
+- POST   /api/events/{id}/ticket-types
+
+### Search
+- GET /api/search/events
+
+### Bookings
+- POST /api/bookings/reserve
+- POST /api/bookings/checkout (Saga)
+- GET  /api/bookings/{id}
+- GET  /api/bookings/my
+
+### Queue
+- POST   /api/queue/{eventId}/join
+- GET    /api/queue/{eventId}/status
+- DELETE /api/queue/{eventId}/leave
+- GET    /api/queue/{eventId}/stream (SSE)
+
+### Payments
+- POST /api/payments/create-intent
+- POST /api/payments/cancel
+- GET  /api/payments/booking/{bookingId}
+
+### Tickets
+- GET  /api/tickets/{bookingId}/qr
+- GET  /api/tickets/{bookingId}/token
+- POST /api/tickets/validate (Organizer/Admin)
+- GET  /api/tickets/scans/{eventId} (Organizer/Admin)
+
+### Webhooks
+- POST /api/webhooks/stripe
+
+### System
+- GET /health
+- GET /health/live
+- GET /metrics
 
 ## Servis Portları
-| Servis        | Port | URL                   |
-|---------------|------|-----------------------|
-| API           | 5157 | http://localhost:5157 |
-| PostgreSQL    | 5432 | localhost:5432        |
-| Redis         | 6379 | localhost:6379        |
-| Kafka         | 9092 | localhost:9092        |
-| Kafka UI      | 8080 | http://localhost:8080 |
-| Elasticsearch | 9200 | http://localhost:9200 |
-| Kibana        | 5601 | http://localhost:5601 |
-| Debezium      | 8083 | http://localhost:8083 |
-| Prometheus    | 9090 | http://localhost:9090 |
-| Grafana       | 3000 | http://localhost:3000 |
+| Servis        | Port | URL                        |
+|---------------|------|----------------------------|
+| API           | 5157 | http://localhost:5157      |
+| PostgreSQL    | 5432 | localhost:5432             |
+| Redis         | 6379 | localhost:6379             |
+| Kafka         | 9092 | localhost:9092             |
+| Kafka UI      | 8080 | http://localhost:8080      |
+| Elasticsearch | 9200 | http://localhost:9200      |
+| Kibana        | 5601 | http://localhost:5601      |
+| Debezium      | 8083 | http://localhost:8083      |
+| Prometheus    | 9090 | http://localhost:9090      |
+| Grafana       | 3000 | http://localhost:3000      |
 
 ## Kafka Topic'leri
-| Topic                  | Kullanım                    |
-|------------------------|-----------------------------|
-| biletix.public.Events  | CDC - PostgreSQL -> ES sync |
-| biletix.notifications  | Outbox -> Notification      |
-| biletix.outbox         | Diğer eventler              |
+| Topic                  | Kullanım             |
+|------------------------|----------------------|
+| biletix.public.Events  | CDC - PG -> ES sync  |
+| biletix.notifications  | Outbox -> Email      |
+| biletix.outbox         | Diğer eventler       |
+
+## Önemli Teknik Kararlar
+1. ITokenService -> Application katmanında
+2. EventSearchDocument -> Application katmanında
+3. Minimal API + IEndpoint pattern, controller yok
+4. EF local tool: dotnet-ef 8.0.11
+5. SDK: .NET 9.0.313, preview uyumu
+6. Primary constructor kullanılmadı
+7. Debezium -> PowerShell ile register, Windows/WSL yok
+8. Testing env'de rate limit yüksek tutuldu
 
 ## Önemli Notlar
-- Stripe, SMTP ve benzeri gizli değerler Git'e yazılmamalı.
-- `stripe listen` her testte yeniden başlatılmalı; webhook secret değişebilir.
-- Debezium connector docker-compose restart sonrası yeniden register edilmeli.
-- Test verileri integration test cleanup akışıyla temizleniyor.
-- Admin seed uygulama başlangıcında otomatik çalışıyor.
-- Monitoring stack için: `docker compose up -d prometheus grafana`.
+- appsettings.json gizli değer içermemeli; Stripe, Gmail ve benzeri key'ler Git'e yazılmamalı.
+- `stripe listen` her testte yeniden başlatılmalı.
+- Debezium connector docker-compose restart'ta yeniden register edilmeli.
+- Admin seed otomatik: `admin@biletix.com` / `Admin123!`
+- Monitoring stack için: `docker compose up -d prometheus grafana`
 
-## Kalan İş
+## Test Sonuçları
+- Domain Tests:      27 OK
+- Application Tests:  9 OK
+- Integration Tests: 20 OK
+- Toplam:           56 OK - 0 Failed, 0 Skipped
+
+## Backend - TAMAMLANDI
+
 Backend için kalan iş yok. Proje backend kapsamı tamamlandı.
+
+## Frontend - BAŞLIYOR
+
+### Frontend Proje Planı (F-01 -> F-25)
+
+#### Faz 1 - Proje İskeleti
+- F-01: Next.js 14 kurulum, layout, Tailwind, shadcn/ui
+- F-02: API client, Axios, TanStack Query setup, Zustand auth store
+- F-03: Auth sayfaları - login, register
+
+#### Faz 2 - Ana Kullanıcı Akışı
+- F-04: Ana sayfa - öne çıkan etkinlikler, hero section
+- F-05: Etkinlik arama ve listeleme
+- F-06: Etkinlik detay sayfası
+- F-07: Profil ve biletlerim sayfası
+
+#### Faz 3 - Bilet Satın Alma
+- F-08: Rezervasyon akışı - ticket type seçimi
+- F-09: Bekleme sırası UI - SSE ile gerçek zamanlı
+- F-10: Stripe Elements - ödeme formu
+- F-11: Ödeme onay ve QR bilet sayfası
+
+#### Faz 4 - Organizatör Paneli
+- F-12: Organizatör dashboard
+- F-13: Etkinlik oluşturma formu
+- F-14: Etkinlik yönetimi - publish, cancel, ticket types
+- F-15: Kapı doğrulama - QR okuyucu
+
+#### Faz 5 - Admin Paneli
+- F-16: Admin dashboard - istatistikler
+- F-17: Kullanıcı yönetimi
+- F-18: Venue yönetimi
+
+#### Faz 6 - Polish & Production
+- F-19: Responsive tasarım düzenlemeleri
+- F-20: Loading states, error boundaries, toast notifications
+- F-21: SEO - metadata, og tags, sitemap
+- F-22: Environment config, deployment hazırlığı
