@@ -19,6 +19,7 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
     private readonly ICurrentUserService _currentUserService;
     private readonly ITicketLockService _ticketLockService;
     private readonly IIdempotencyService _idempotencyService;
+    private readonly IWaitingQueueService _waitingQueueService;
 
     /// <summary>
     /// Handler'in ihtiyac duydugu veritabani, kullanici, lock ve idempotency servislerini alir.
@@ -31,12 +32,14 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
         ITicketLockService ticketLockService,
-        IIdempotencyService idempotencyService)
+        IIdempotencyService idempotencyService,
+        IWaitingQueueService waitingQueueService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _ticketLockService = ticketLockService;
         _idempotencyService = idempotencyService;
+        _waitingQueueService = waitingQueueService;
     }
 
     /// <summary>
@@ -55,6 +58,17 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
 
         var userId = _currentUserService.UserId
             ?? throw new DomainException("Authenticated user is required");
+
+        var queueLength = await _waitingQueueService.GetQueueLengthAsync(request.EventId);
+        if (queueLength > 0)
+        {
+            var canProceed = await _waitingQueueService.CanProceedAsync(request.EventId, userId);
+            if (!canProceed)
+            {
+                throw new DomainException(
+                    "Please wait in queue. You will be notified when it's your turn.");
+            }
+        }
 
         var @event = await _context.Events
             .Include(item => item.TicketTypes)
@@ -88,6 +102,8 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
                 request.IdempotencyKey,
                 JsonSerializer.Serialize(response, JsonOptions),
                 TimeSpan.FromHours(24)); // Cevabi idempotency cache'ine kaydet, bu sayede ayni idempotency key ile gelen sonraki isteklerde yeni rezervasyon islemi yapilmaz, cache'teki cevabi donulur
+
+            await _waitingQueueService.DequeueAsync(request.EventId, userId);
 
             return response;
         }

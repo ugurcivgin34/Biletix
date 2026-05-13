@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITicketLockService, TicketLockService>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
+        services.AddScoped<IWaitingQueueService, WaitingQueueService>();
 
         var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
         var elasticsearchSettings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))
