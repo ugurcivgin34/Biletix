@@ -4,6 +4,7 @@ using Biletix.Infrastructure.Jobs;
 using Biletix.Infrastructure.Messaging.Consumers;
 using Biletix.Infrastructure.Messaging.Producers;
 using Biletix.Infrastructure.Messaging.Workers;
+using Biletix.Infrastructure.Notifications;
 using Biletix.Infrastructure.Payment;
 using Biletix.Infrastructure.Persistence;
 using Biletix.Infrastructure.Redis;
@@ -45,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<IWaitingQueueService, WaitingQueueService>();
         services.AddScoped<IPaymentService, StripePaymentService>();
+        services.AddScoped<IEmailService, GmailSmtpEmailService>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
@@ -57,6 +59,7 @@ public static class DependencyInjection
         services.AddHostedService<EventCdcConsumer>();
         services.AddHostedService<OutboxRelayWorker>();
         services.AddHostedService<ExpireBookingsJob>();
+        services.AddHostedService<NotificationKafkaConsumer>();
 
         return services;
     }
