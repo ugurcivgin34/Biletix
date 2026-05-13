@@ -1,158 +1,135 @@
-# Biletix — Geliştirme İlerleme Dosyası
+# Biletix - Geliştirme İlerleme Dosyası
 
 ## Proje Hakkında
-.NET 8 Clean Architecture + Minimal API ile yazılmış
-Biletix/TicketMaster benzeri bilet satış backend sistemi.
-25 prompt, 7 faz halinde geliştiriliyor.
+.NET 8 Clean Architecture + Minimal API ile yazılmış Biletix/TicketMaster benzeri bilet satış backend sistemi.
+
+Backend kapsamı 7 faz halinde tamamlandı.
+
+## Backend Durumu
+Tamamlandı.
+
+- Domain, Application, Infrastructure ve API katmanları tamamlandı.
+- Auth, RBAC, event/venue yönetimi, arama, booking, queue, payment, saga, outbox, notification, QR ve kapı doğrulama akışları tamamlandı.
+- Unit test ve integration test altyapısı tamamlandı.
+- OpenTelemetry, Prometheus/Grafana monitoring, rate limiting ve security headers tamamlandı.
+- Son doğrulama: `dotnet build Biletix.sln` ve `dotnet test Biletix.sln` başarılı.
 
 ## Teknoloji Stack
 - .NET 8 Minimal API, Clean Architecture, CQRS, MediatR 12.x
-- PostgreSQL 16 — EF Core 8, Migrations, Soft Delete, Audit
-- Redis 7 — Distributed Lock, Cache, Idempotency, Waiting Queue
-- Apache Kafka + Debezium — CDC Pipeline
-- Elasticsearch 8 — Fuzzy Search, Filtre, Index Sync
-- Stripe — PaymentIntent, Webhook Handler
-- BCrypt, JWT, Refresh Token Rotation
+- PostgreSQL 16 - EF Core 8, migrations, soft delete, audit
+- Redis 7 - distributed lock, cache, idempotency, waiting queue
+- Apache Kafka + Debezium - CDC pipeline
+- Elasticsearch 8 - fuzzy search, filtreleme, index sync
+- Stripe - PaymentIntent, webhook handler
+- BCrypt, JWT, refresh token rotation
 - FluentValidation, Serilog, StackExchange.Redis
-- Docker Compose — 8 servis tek komutla
+- OpenTelemetry, Prometheus, Grafana
+- xUnit, FluentAssertions, NSubstitute, Testcontainers
+- Docker Compose ile local altyapı
 
 ## Solution Yapısı
+```text
 src/
-  Biletix.Domain/          → Entity, AggregateRoot, DomainEvent, Exception
-  Biletix.Application/     → CQRS, Handler, Validator, Interface, DTO
-  Biletix.Infrastructure/  → EF Core, Redis, Kafka, ES, Stripe, Jobs
-  Biletix.API/             → Minimal API, Endpoint, Middleware
+  Biletix.Domain/          -> Entity, AggregateRoot, DomainEvent, Exception
+  Biletix.Application/     -> CQRS, Handler, Validator, Interface, DTO
+  Biletix.Infrastructure/  -> EF Core, Redis, Kafka, ES, Stripe, Jobs, Observability
+  Biletix.API/             -> Minimal API, Endpoint, Middleware
 
 tests/
   Biletix.Domain.Tests/
   Biletix.Application.Tests/
   Biletix.Integration.Tests/
+```
 
 ## Domain Entity'leri
-- User (Admin/Organizer/Customer rolleri)
-- Venue (mekan)
-- Performer (sanatçı)
-- Event (Draft→Published→Cancelled→Completed state machine)
-- TicketType (kapasite, fiyat, stok)
-- Booking (Pending→Confirmed→Cancelled→Expired state machine)
+- User: Admin, Organizer, Customer rolleri
+- Venue
+- Performer
+- Event: Draft -> Published -> Cancelled -> Completed state machine
+- TicketType: kapasite, fiyat, stok
+- Booking: Pending -> Confirmed -> Cancelled -> Expired state machine
 - BookingItem
 - OutboxMessage
+- TicketScan
 
-## Tamamlanan Adımlar
+## Tamamlanan Fazlar
 
-### ✅ Faz 1 — Altyapı (P-01 → P-04)
-- P-01: Clean Architecture solution, Minimal API iskeleti
-        IEndpoint pattern, GlobalExceptionHandler (RFC 7807)
-        LoggingBehaviour, ValidationBehaviour pipeline
-- P-02: Docker Compose — PostgreSQL, Redis, Kafka, Elasticsearch, Debezium
-        8 servis, health check'li, biletix-network
-- P-03: EF Core domain entity'leri, InitialCreate migration
-        SaveChangesAsync: audit + soft delete + domain event dispatch
-- P-04: CorrelationIdMiddleware, RequestLoggingMiddleware
-        Health checks — postgresql/redis/elasticsearch ayrı ayrı
+### Faz 1 - Altyapı
+- P-01: Clean Architecture solution, Minimal API iskeleti, IEndpoint pattern, GlobalExceptionHandler, logging/validation pipeline.
+- P-02: Docker Compose ile PostgreSQL, Redis, Kafka, Elasticsearch, Debezium ve ilgili local servisler.
+- P-03: EF Core domain entity'leri, migrations, audit, soft delete, domain event dispatch.
+- P-04: CorrelationIdMiddleware, RequestLoggingMiddleware, health checks.
 
-### ✅ Faz 2 — Auth (P-05 → P-06)
-- P-05: User entity, BCrypt password hash
-        JWT access token (15dk) + refresh token (7gün)
-        Redis refresh token storage + rotation
-        /api/auth/register, login, refresh, logout
-- P-06: AdminOnly, OrganizerOrAdmin, AuthenticatedUser policy'leri
-        ICurrentUserService, IResourceAuthorizationService
-        Admin seed (admin@biletix.com / Admin123!)
-        /api/auth/me, /admin-only, /organizer-panel
+### Faz 2 - Auth
+- P-05: User entity, BCrypt password hash, JWT access token, Redis refresh token storage ve rotation.
+- P-06: AdminOnly, OrganizerOrAdmin, AuthenticatedUser policy'leri, CurrentUserService, ResourceAuthorizationService, admin seed.
 
-### ✅ Faz 3 — Event & Venue (P-07 → P-10)
-- P-07: Venue CRUD — GET/POST/PUT/DELETE /api/venues
-        ILike ile arama, pagination, soft delete
-- P-08: Event CRUD — /api/events
-        Event.Publish(), Event.Cancel() domain metotları
-        TicketType ekleme, CreatedBy alanı
-        Draft/Published/Cancelled state machine
-- P-09: Elasticsearch search — /api/search/events
-        Multi-match fuzzy, filtre (city/genre/price/date), sort
-        Domain event handler ile publish sonrası ES index
-- P-10: CDC Pipeline
-        Debezium PostgreSQL connector (pgoutput, logical replication)
-        EventCdcConsumer BackgroundService
-        op=c/u/d → ES otomatik sync
-        Kafka topic: biletix.public.Events
+### Faz 3 - Event & Venue
+- P-07: Venue CRUD, arama, pagination, soft delete.
+- P-08: Event CRUD, publish/cancel domain metotları, ticket type ekleme, CreatedBy alanı.
+- P-09: Elasticsearch search, fuzzy query, filtreleme, sorting.
+- P-10: Debezium CDC pipeline ile PostgreSQL -> Kafka -> Elasticsearch sync.
 
-### ✅ Faz 4 — Booking & Ticket (P-11/12/13 → P-14)
-- P-11/12/13: TicketType.Reserve/ReleaseReservation/ConfirmSale
-              Redis SET NX distributed lock (TTL 10dk)
-              Idempotency-Key header + Redis cache (24h)
-              /api/bookings/reserve, /{id}, /my
-- P-14: Virtual Waiting Queue — Redis SortedSet (score=timestamp)
-        ActiveSlots=500, IWaitingQueueService
-        /api/queue/{eventId}/join, /status, /leave
-        SSE stream — /api/queue/{eventId}/stream
-        Reserve öncesi queue kontrolü
+### Faz 4 - Booking & Ticket
+- P-11/P-12/P-13: Ticket reservation domain logic, Redis distributed lock, Idempotency-Key, booking reserve/detail/my endpoints.
+- P-14: Virtual waiting queue, Redis SortedSet, join/status/leave/SSE stream, reserve öncesi queue kontrolü.
 
-### ✅ Faz 5 — Ödeme & Saga (P-15 → P-18)
-- P-15: Stripe PaymentIntent — Stripe.net 45.x
-        IPaymentService, StripePaymentService
-        OutboxMessage entity + migration
-        /api/payments/create-intent, /cancel, /booking/{id}
-- P-16: Stripe webhook handler — /api/webhooks/stripe
-        EventUtility.ConstructEvent imza doğrulama
-        payment_intent.succeeded → ConfirmBookingCommand
-        payment_intent.payment_failed → ExpireBookingOnPaymentFailureCommand
-        booking.confirmed / booking.payment_failed outbox mesajı
-- P-17: Outbox Relay Worker (BackgroundService, 5sn)
-        IEventPublisher, KafkaEventPublisher
-        FIFO, RetryCount<5, IsProcessed flag
-        biletix.notifications topic'ine publish
-- P-18: BookingSaga — reserve + payment intent + compensation
-        ExpireBookingsJob (60sn, Pending+ExpiresAt<now)
-        /api/bookings/checkout (tek endpoint saga)
-        BookingSagaState enum
+### Faz 5 - Ödeme & Saga
+- P-15: Stripe PaymentIntent, PaymentService, OutboxMessage, payment endpoints.
+- P-16: Stripe webhook handler, booking confirm/payment failed flows.
+- P-17: Outbox Relay Worker, KafkaEventPublisher, notification topic publish.
+- P-18: BookingSaga, compensation, ExpireBookingsJob, checkout endpoint.
 
-### 🔄 Faz 6 — Bildirim & QR (devam ediyor)
-- P-19: Notification Service — Kafka consumer + SendGrid email  ← SIRADAKI
-- P-20: QR bilet üretimi — JWT imzalı payload, PNG generate
-- P-21: Kapı doğrulama endpoint'i — QR scan, JWT verify
+### Faz 6 - Bildirim & QR
+- P-19: Notification Kafka consumer, email service, email templates.
+- P-20: QR bilet üretimi, JWT imzalı payload, PNG generate.
+- P-21: Kapı doğrulama endpoint'i, QR scan, JWT verify, scan history.
 
-### ⏳ Faz 7 — Test & Observability
-- P-22: Unit testler — xUnit + FluentAssertions + NSubstitute
-- P-23: Integration testler — Testcontainers
-- P-24: OpenTelemetry — trace, metric, Prometheus + Grafana
-- P-25: Rate limiting + YARP API Gateway
+### Faz 7 - Test & Observability
+- P-22: Domain ve Application unit testleri.
+- P-23: Testcontainers ile PostgreSQL/Redis integration testleri.
+- P-24: OpenTelemetry tracing/metrics, Prometheus endpoint, Grafana dashboard.
+- P-25: Rate limiting ve security headers.
+- Not: YARP Gateway eklenmedi; monolitik mimari için gerekli değil.
 
 ## Önemli Mimari Kararlar
-1. ITokenService → Application katmanında (Infrastructure→Application dependency yönü korundu)
-2. EventSearchDocument → Application katmanında (aynı sebep)
-3. Minimal API + IEndpoint pattern (controller yok)
-4. Read → PG Replica, Write → Primary (CQRS ile ayrım)
-5. EF local tool: dotnet-ef 8.0.11 (.config/dotnet-tools.json)
-6. RuntimeFrameworkVersion: 8.0.26 (preview SDK uyumu)
-7. Primary constructor ve [] collection expression kullanılmadı (SDK uyumu)
-8. Debezium connector PowerShell ile register edildi (Windows, WSL yok)
+1. ITokenService Application katmanında tutuldu; dependency yönü korundu.
+2. EventSearchDocument Application katmanında tutuldu.
+3. Minimal API + IEndpoint pattern kullanıldı.
+4. EF Core soft delete global query filter ile uygulandı.
+5. Transactional outbox ile notification publish güvenli hale getirildi.
+6. Integration testlerde gerçek PostgreSQL ve Redis Testcontainers ile çalışıyor.
+7. OpenTelemetry custom meter Application katmanında tutuldu; Infrastructure tarafında compatibility wrapper var.
+8. appsettings.json secret içermeyecek şekilde temizlendi; gizli değerler environment/user-secrets ile verilmeli.
 
-## Servis Portları (Docker)
-| Servis        | Port  | URL                        |
-|---------------|-------|----------------------------|
-| API           | 5157  | http://localhost:5157      |
-| PostgreSQL    | 5432  | localhost:5432             |
-| Redis         | 6379  | localhost:6379             |
-| Kafka         | 9092  | localhost:9092             |
-| Kafka UI      | 8080  | http://localhost:8080      |
-| Elasticsearch | 9200  | http://localhost:9200      |
-| Kibana        | 5601  | http://localhost:5601      |
-| Debezium      | 8083  | http://localhost:8083      |
+## Servis Portları
+| Servis        | Port | URL                   |
+|---------------|------|-----------------------|
+| API           | 5157 | http://localhost:5157 |
+| PostgreSQL    | 5432 | localhost:5432        |
+| Redis         | 6379 | localhost:6379        |
+| Kafka         | 9092 | localhost:9092        |
+| Kafka UI      | 8080 | http://localhost:8080 |
+| Elasticsearch | 9200 | http://localhost:9200 |
+| Kibana        | 5601 | http://localhost:5601 |
+| Debezium      | 8083 | http://localhost:8083 |
+| Prometheus    | 9090 | http://localhost:9090 |
+| Grafana       | 3000 | http://localhost:3000 |
 
 ## Kafka Topic'leri
 | Topic                  | Kullanım                    |
 |------------------------|-----------------------------|
-| biletix.public.Events  | CDC — PG→ES sync            |
-| biletix.notifications  | Outbox → Notification       |
+| biletix.public.Events  | CDC - PostgreSQL -> ES sync |
+| biletix.notifications  | Outbox -> Notification      |
 | biletix.outbox         | Diğer eventler              |
 
 ## Önemli Notlar
-- appsettings.json Stripe key içeriyor — Git'e ATMA
-- stripe listen her testte yeniden başlatılmalı (whsec_ değişiyor)
-- Debezium connector her docker-compose restart'ta yeniden register edilmeli
-- Test verileri her testten sonra temizlendi
-- Admin seed uygulama başlangıcında otomatik çalışıyor
+- Stripe, SMTP ve benzeri gizli değerler Git'e yazılmamalı.
+- `stripe listen` her testte yeniden başlatılmalı; webhook secret değişebilir.
+- Debezium connector docker-compose restart sonrası yeniden register edilmeli.
+- Test verileri integration test cleanup akışıyla temizleniyor.
+- Admin seed uygulama başlangıcında otomatik çalışıyor.
+- Monitoring stack için: `docker compose up -d prometheus grafana`.
 
-## Kalan İş (7 adım)
-P-19 → P-20 → P-21 → P-22 → P-23 → P-24 → P-25
+## Kalan İş
+Backend için kalan iş yok. Proje backend kapsamı tamamlandı.
