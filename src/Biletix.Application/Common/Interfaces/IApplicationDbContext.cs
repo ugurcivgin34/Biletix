@@ -49,6 +49,11 @@ public interface IApplicationDbContext
     DbSet<OutboxMessage> OutboxMessages { get; }
 
     /// <summary>
+    /// QR bilet tarama kayitlari icin sorgu ve kalicilik giris noktasi.
+    /// </summary>
+    DbSet<TicketScan> TicketScans { get; }
+
+    /// <summary>
     /// Bekleyen degisiklikleri veritabanina kaydeder.
     /// </summary>
     /// <param name="cancellationToken">Asenkron islemi iptal etmek icin kullanilan token.</param>

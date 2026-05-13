@@ -66,6 +66,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     /// <summary>
+    /// QR bilet tarama kayitlari icin sorgu ve kalicilik giris noktasi.
+    /// </summary>
+    public DbSet<TicketScan> TicketScans => Set<TicketScan>();
+
+    /// <summary>
     /// Degisiklikleri kaydetmeden once audit alanlarini gunceller, kayittan sonra domain event'leri yayinlar.
     /// </summary>
     /// <param name="cancellationToken">Asenkron islemi iptal etmek icin kullanilan token.</param>

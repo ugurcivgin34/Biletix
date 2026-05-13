@@ -1,6 +1,8 @@
 using Biletix.API.Common;
 using Biletix.Application.Common.Interfaces;
+using Biletix.Application.Features.Tickets.Commands.ValidateTicket;
 using Biletix.Domain.Entities;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Biletix.API.Features.Tickets;
@@ -33,6 +35,16 @@ public sealed class TicketEndpoints : IEndpoint
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/validate", ValidateTicketAsync)
+            .WithName("ValidateTicket")
+            .RequireAuthorization("OrganizerOrAdmin")
+            .Produces<ValidateTicketResponse>(StatusCodes.Status200OK);
+
+        group.MapGet("/scans/{eventId:guid}", GetScanHistoryAsync)
+            .WithName("GetTicketScanHistory")
+            .RequireAuthorization("OrganizerOrAdmin")
+            .Produces(StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> GetQrAsync(
@@ -128,4 +140,66 @@ public sealed class TicketEndpoints : IEndpoint
 
         return (booking, null);
     }
+
+    private static async Task<IResult> ValidateTicketAsync(
+        ValidateTicketRequest request,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var response = await sender.Send(new ValidateTicketCommand
+        {
+            QrToken = request.QrToken,
+            ScannedBy = request.ScannedBy
+        }, ct);
+
+        return Results.Ok(response);
+    }
+
+    private static async Task<IResult> GetScanHistoryAsync(
+        Guid eventId,
+        int page,
+        int pageSize,
+        IApplicationDbContext context,
+        CancellationToken ct)
+    {
+        page = page <= 0 ? 1 : page;
+        pageSize = pageSize is <= 0 or > 200 ? 50 : pageSize;
+
+        var scans = await context.TicketScans
+            .AsNoTracking()
+            .Where(scan => scan.EventId == eventId)
+            .OrderByDescending(scan => scan.ScannedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .GroupJoin(
+                context.Users.AsNoTracking(),
+                scan => scan.UserId,
+                user => user.Id,
+                (scan, users) => new
+                {
+                    Scan = scan,
+                    User = users.FirstOrDefault()
+                })
+            .Select(item => new
+            {
+                bookingId = item.Scan.BookingId,
+                scannedAt = item.Scan.ScannedAt,
+                isValid = item.Scan.IsValid,
+                invalidReason = item.Scan.InvalidReason,
+                attendeeName = item.User == null
+                    ? null
+                    : (item.User.FirstName + " " + item.User.LastName).Trim(),
+                scannedBy = item.Scan.ScannedBy
+            })
+            .ToListAsync(ct);
+
+        return Results.Ok(scans);
+    }
 }
+
+/// <summary>
+/// QR bilet dogrulama endpoint'i request modelidir.
+/// </summary>
+/// <param name="QrToken">QR koddan okunan JWT imzali bilet token'i.</param>
+/// <param name="ScannedBy">Taramayi yapan kapi gorevlisi, cihaz veya turnike kimligi.</param>
+public sealed record ValidateTicketRequest(string QrToken, string ScannedBy);
