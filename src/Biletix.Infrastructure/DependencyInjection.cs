@@ -90,6 +90,14 @@ public static class DependencyInjection
             configuration["Elasticsearch:Url"]!,
             name: "elasticsearch",
             tags: new[] { "search" });
+        builder.AddUrlGroup(
+            new Uri("http://localhost:9090"),
+            name: "prometheus",
+            tags: new[] { "monitoring" });
+        builder.AddUrlGroup(
+            new Uri("http://localhost:3000"),
+            name: "grafana",
+            tags: new[] { "monitoring" });
 
         return builder;
     }

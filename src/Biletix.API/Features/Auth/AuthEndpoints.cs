@@ -8,6 +8,7 @@ using Biletix.Application.Features.Auth.Commands.RefreshToken;
 using Biletix.Application.Features.Auth.Commands.Register;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Biletix.API.Features.Auth;
 
@@ -27,16 +28,19 @@ public class AuthEndpoints : IEndpoint
 
         group.MapPost("/register", RegisterAsync)
             .AllowAnonymous()
+            .RequireRateLimiting("auth")
             .WithName("Register")
             .Produces<RegisterResponse>(StatusCodes.Status201Created);
 
         group.MapPost("/login", LoginAsync)
             .AllowAnonymous()
+            .RequireRateLimiting("auth")
             .WithName("Login")
             .Produces<LoginResponse>(StatusCodes.Status200OK);
 
         group.MapPost("/refresh", RefreshAsync)
             .AllowAnonymous()
+            .RequireRateLimiting("auth")
             .WithName("RefreshToken")
             .Produces<LoginResponse>(StatusCodes.Status200OK);
 

@@ -7,6 +7,7 @@ using Biletix.Application.Features.Bookings.Queries.GetMyBookings;
 using Biletix.Application.Features.Bookings.Saga;
 using Biletix.Application.Common.Interfaces;
 using MediatR;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Biletix.API.Features.Bookings;
 
@@ -28,10 +29,12 @@ public sealed class BookingEndpoints : IEndpoint
             .RequireAuthorization("AuthenticatedUser");
 
         group.MapPost("/reserve", ReserveTicketsAsync)
+            .RequireRateLimiting("booking")
             .WithName("ReserveTickets")
             .Produces<BookingResponse>(StatusCodes.Status201Created);
 
         group.MapPost("/checkout", CheckoutAsync)
+            .RequireRateLimiting("booking")
             .WithName("Checkout")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)

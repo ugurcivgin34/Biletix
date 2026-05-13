@@ -5,6 +5,7 @@ using Biletix.Application.Features.Queue.Commands.JoinQueue;
 using Biletix.Application.Features.Queue.DTOs;
 using Biletix.Application.Features.Queue.Queries.GetQueueStatus;
 using MediatR;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Biletix.API.Features.Queue;
 
@@ -24,6 +25,7 @@ public sealed class QueueEndpoints : IEndpoint
             .RequireAuthorization("AuthenticatedUser");
 
         group.MapPost("/{eventId:guid}/join", JoinQueueAsync)
+            .RequireRateLimiting("booking")
             .WithName("JoinQueue")
             .Produces<QueueStatusResponse>(StatusCodes.Status200OK);
 

@@ -1,4 +1,5 @@
 using Biletix.Application.Common.Interfaces;
+using Biletix.Application.Common.Observability;
 using Biletix.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -207,6 +208,9 @@ public sealed class ValidateTicketCommandHandler
             IsValid = isValid,
             InvalidReason = invalidReason
         });
+        BiletixMetrics.TicketsScanned.Add(
+            1,
+            new KeyValuePair<string, object?>("is_valid", isValid.ToString()));
 
         await _context.SaveChangesAsync(ct);
     }

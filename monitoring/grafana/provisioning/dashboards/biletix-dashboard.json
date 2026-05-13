@@ -1,0 +1,112 @@
+{
+  "uid": "biletix-main",
+  "title": "Biletix Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "HTTP Request Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(http_server_request_duration_seconds_count[5m])",
+          "legendFormat": "{{http_request_method}} {{http_route}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP Error Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(http_server_request_duration_seconds_count{http_response_status_code=~\"4..|5..\"}[5m])",
+          "legendFormat": "{{http_response_status_code}} {{http_route}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "HTTP P95 Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{http_route}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Bookings Created",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "increase(biletix_bookings_created_total[1h])" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Bookings Confirmed",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        { "expr": "increase(biletix_bookings_confirmed_total[1h])" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Bookings Expired",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "increase(biletix_bookings_expired_total[1h])" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Payment Amount",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
+      "targets": [
+        { "expr": "sum(biletix_booking_amount_sum)" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Search Requests",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "rate(biletix_search_requests_total[5m])" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Ticket Scans",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        { "expr": "increase(biletix_tickets_scanned_total[1h])" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "gauge",
+      "title": "Active .NET Threads",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        { "expr": "process_runtime_dotnet_thread_pool_threads_count" }
+      ]
+    }
+  ]
+}

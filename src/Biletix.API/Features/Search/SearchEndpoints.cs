@@ -2,6 +2,7 @@ using Biletix.API.Common;
 using Biletix.Application.Common.Models;
 using Biletix.Application.Features.Events.Queries.SearchEvents;
 using MediatR;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Biletix.API.Features.Search;
 
@@ -21,6 +22,7 @@ public sealed class SearchEndpoints : IEndpoint
 
         group.MapGet("/events", SearchEventsAsync)
             .AllowAnonymous()
+            .RequireRateLimiting("search")
             .WithName("SearchEvents")
             .Produces<PagedResult<EventSearchDocument>>(StatusCodes.Status200OK);
     }

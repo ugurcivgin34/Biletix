@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Biletix.Application.Common.Interfaces;
+using Biletix.Application.Common.Observability;
 using Biletix.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -51,6 +52,7 @@ public sealed class ExpireBookingsCommandHandler : ICommandHandler<ExpireBooking
         foreach (var booking in expiredBookings)
         {
             booking.Expire();
+            BiletixMetrics.BookingsExpired.Add(1);
 
             foreach (var item in booking.Items)
             {

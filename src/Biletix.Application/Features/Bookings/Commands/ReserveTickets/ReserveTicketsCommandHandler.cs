@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Biletix.Application.Common.Interfaces;
+using Biletix.Application.Common.Observability;
 using Biletix.Application.Features.Bookings.DTOs;
 using Biletix.Domain.Entities;
 using Biletix.Domain.Exceptions;
@@ -96,6 +97,9 @@ public sealed class ReserveTicketsCommandHandler : ICommandHandler<ReserveTicket
 
             await _context.Bookings.AddAsync(booking, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
+            BiletixMetrics.BookingsCreated.Add(
+                1,
+                new KeyValuePair<string, object?>("event_id", request.EventId.ToString()));
 
             var response = booking.ToResponse(@event);
             await _idempotencyService.CacheResponseAsync(

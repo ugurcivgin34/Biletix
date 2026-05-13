@@ -1,5 +1,6 @@
 using Biletix.Application.Common.Interfaces;
 using Biletix.Application.Common.Models;
+using Biletix.Application.Common.Observability;
 
 namespace Biletix.Application.Features.Events.Queries.SearchEvents;
 
@@ -29,6 +30,8 @@ public sealed class SearchEventsQueryHandler : IQueryHandler<SearchEventsQuery, 
         SearchEventsQuery request,
         CancellationToken cancellationToken)
     {
+        BiletixMetrics.SearchRequests.Add(1);
+
         var searchRequest = new EventSearchRequest
         {
             SearchTerm = request.SearchTerm,

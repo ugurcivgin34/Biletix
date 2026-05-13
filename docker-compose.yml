@@ -182,6 +182,39 @@ services:
     networks:
       - biletix-network
 
+  # Prometheus API'nin /metrics endpoint'inden uygulama ve runtime metriklerini toplar.
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: biletix-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+    networks:
+      - biletix-network
+
+  # Grafana Prometheus datasource ve Biletix dashboard provisioning ile gelir.
+  grafana:
+    image: grafana/grafana:latest
+    container_name: biletix-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: biletix123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - biletix-network
+
 networks:
   # Tum local altyapi servisleri ayni bridge network icinde birbirlerini servis adlariyla gorebilir.
   biletix-network:
@@ -194,3 +227,5 @@ volumes:
   zookeeper_data:
   kafka_data:
   elasticsearch_data:
+  prometheus_data:
+  grafana_data:

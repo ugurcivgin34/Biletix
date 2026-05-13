@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Biletix.Application.Common.Interfaces;
+using Biletix.Application.Common.Observability;
 using Biletix.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -119,6 +120,9 @@ public sealed class ConfirmBookingCommandHandler : ICommandHandler<ConfirmBookin
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+        BiletixMetrics.BookingsConfirmed.Add(1);
+        BiletixMetrics.PaymentsProcessed.Add(1);
+        BiletixMetrics.BookingAmount.Record((double)booking.TotalAmount);
 
         _logger.LogInformation("Booking {Id} confirmed via Stripe webhook", booking.Id);
     }
