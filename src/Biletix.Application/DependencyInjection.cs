@@ -1,5 +1,6 @@
 using System.Reflection;
 using Biletix.Application.Common.Behaviours;
+using Biletix.Application.Features.Bookings.Saga;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public static class DependencyInjection
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehaviour<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+        services.AddScoped<IBookingSaga, BookingSaga>();
 
         return services;
     }

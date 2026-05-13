@@ -9,6 +9,29 @@ namespace Biletix.Application.Features.Bookings.Commands.ReserveTickets;
 public sealed class ReserveTicketsCommand : ICommand<BookingResponse>
 {
     /// <summary>
+    /// Komutu bos olusturur.
+    /// </summary>
+    public ReserveTicketsCommand()
+    {
+    }
+
+    /// <summary>
+    /// Komutu etkinlik, bilet kalemleri ve idempotency key ile olusturur.
+    /// </summary>
+    /// <param name="eventId">Rezervasyon yapilacak etkinlik kimligi.</param>
+    /// <param name="items">Rezerve edilecek bilet kalemleri.</param>
+    /// <param name="idempotencyKey">Idempotency anahtari.</param>
+    public ReserveTicketsCommand(
+        Guid eventId,
+        List<ReserveTicketItemDto> items,
+        string idempotencyKey)
+    {
+        EventId = eventId;
+        Items = items;
+        IdempotencyKey = idempotencyKey;
+    }
+
+    /// <summary>
     /// Rezervasyon yapilacak etkinlik kimligi.
     /// </summary>
     public Guid EventId { get; set; }

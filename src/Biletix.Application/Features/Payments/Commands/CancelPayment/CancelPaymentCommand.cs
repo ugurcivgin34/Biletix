@@ -8,6 +8,22 @@ namespace Biletix.Application.Features.Payments.Commands.CancelPayment;
 public sealed class CancelPaymentCommand : ICommand
 {
     /// <summary>
+    /// Komutu bos olusturur.
+    /// </summary>
+    public CancelPaymentCommand()
+    {
+    }
+
+    /// <summary>
+    /// Komutu rezervasyon kimligiyle olusturur.
+    /// </summary>
+    /// <param name="bookingId">Iptal edilecek rezervasyon kimligi.</param>
+    public CancelPaymentCommand(Guid bookingId)
+    {
+        BookingId = bookingId;
+    }
+
+    /// <summary>
     /// Iptal edilecek rezervasyon kimligi.
     /// </summary>
     public Guid BookingId { get; set; }

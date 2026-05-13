@@ -4,6 +4,8 @@ using Biletix.Application.Features.Bookings.Commands.ReserveTickets;
 using Biletix.Application.Features.Bookings.DTOs;
 using Biletix.Application.Features.Bookings.Queries.GetBooking;
 using Biletix.Application.Features.Bookings.Queries.GetMyBookings;
+using Biletix.Application.Features.Bookings.Saga;
+using Biletix.Application.Common.Interfaces;
 using MediatR;
 
 namespace Biletix.API.Features.Bookings;
@@ -28,6 +30,12 @@ public sealed class BookingEndpoints : IEndpoint
         group.MapPost("/reserve", ReserveTicketsAsync)
             .WithName("ReserveTickets")
             .Produces<BookingResponse>(StatusCodes.Status201Created);
+
+        group.MapPost("/checkout", CheckoutAsync)
+            .WithName("Checkout")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status422UnprocessableEntity);
 
         group.MapGet("/my", GetMyBookingsAsync)
             .WithName("GetMyBookings")
@@ -61,6 +69,50 @@ public sealed class BookingEndpoints : IEndpoint
         return Results.Created($"/api/bookings/{response.Id}", response);
     }
 
+    private static async Task<IResult> CheckoutAsync(
+        CheckoutRequest request,
+        HttpContext httpContext,
+        ICurrentUserService currentUserService,
+        IBookingSaga bookingSaga,
+        CancellationToken ct)
+    {
+        var idempotencyKey = httpContext.Request.Headers[IdempotencyKeyHeader].ToString();
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return Results.BadRequest("Idempotency-Key header is required");
+        }
+
+        if (currentUserService.UserId is not { } userId)
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await bookingSaga.ExecuteAsync(
+            request.EventId,
+            userId,
+            (request.Items ?? new List<ReserveTicketItemRequest>())
+                .Select(item => new ReserveTicketItemDto(item.TicketTypeId, item.Quantity))
+                .ToList(),
+            idempotencyKey,
+            ct);
+
+        if (!result.IsSuccess)
+        {
+            return Results.UnprocessableEntity(new
+            {
+                error = result.Error,
+                state = result.FinalState.ToString()
+            });
+        }
+
+        return Results.Ok(new
+        {
+            bookingId = result.BookingId,
+            clientSecret = result.ClientSecret,
+            message = "Booking created. Use clientSecret to complete payment."
+        });
+    }
+
     private static async Task<IResult> GetBookingAsync(Guid id, ISender sender)
     {
         var response = await sender.Send(new GetBookingQuery { Id = id });
@@ -85,6 +137,13 @@ public sealed class BookingEndpoints : IEndpoint
 /// <param name="EventId">Rezervasyon yapilacak etkinlik kimligi.</param>
 /// <param name="Items">Rezerve edilecek bilet kalemleri.</param>
 public sealed record ReserveTicketsRequest(Guid EventId, List<ReserveTicketItemRequest> Items);
+
+/// <summary>
+/// Checkout endpoint'i icin request modelidir.
+/// </summary>
+/// <param name="EventId">Rezervasyon yapilacak etkinlik kimligi.</param>
+/// <param name="Items">Rezerve edilecek bilet kalemleri.</param>
+public sealed record CheckoutRequest(Guid EventId, List<ReserveTicketItemRequest> Items);
 
 /// <summary>
 /// Rezervasyon istegindeki tek bir bilet kalemi request modelidir.

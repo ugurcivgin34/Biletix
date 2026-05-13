@@ -1,5 +1,6 @@
 using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure.Auth;
+using Biletix.Infrastructure.Jobs;
 using Biletix.Infrastructure.Messaging.Consumers;
 using Biletix.Infrastructure.Messaging.Producers;
 using Biletix.Infrastructure.Messaging.Workers;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IEventSearchService, ElasticsearchEventSearchService>();
         services.AddHostedService<EventCdcConsumer>();
         services.AddHostedService<OutboxRelayWorker>();
+        services.AddHostedService<ExpireBookingsJob>();
 
         return services;
     }

@@ -111,6 +111,7 @@ public sealed class OutboxRelayWorker : BackgroundService
             "booking.confirmed" => "biletix.notifications",
             "booking.payment_failed" => "biletix.notifications",
             "booking.cancelled" => "biletix.notifications",
+            "booking.expired" => "biletix.notifications",
             _ => "biletix.outbox"
         };
     }
