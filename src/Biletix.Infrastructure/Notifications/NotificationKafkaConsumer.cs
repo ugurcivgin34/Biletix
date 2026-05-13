@@ -134,6 +134,7 @@ public sealed class NotificationKafkaConsumer : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+        var qrTicketService = scope.ServiceProvider.GetRequiredService<IQrTicketService>();
 
         var user = await context.Users
             .AsNoTracking()
@@ -152,19 +153,35 @@ public sealed class NotificationKafkaConsumer : BackgroundService
             return;
         }
 
+        var ticketToken = qrTicketService.GenerateTicketToken(
+            payload.BookingId,
+            payload.UserId,
+            payload.EventId);
+        var qrPngBytes = qrTicketService.GenerateQrCodePng(ticketToken);
+        var qrContentId = $"ticket-qr-{payload.BookingId:N}@biletix";
+
         var html = EmailTemplates.BookingConfirmed(
             user.FirstName,
             @event.Title,
             @event.StartDate,
             @event.Venue?.Name ?? "TBD",
             payload.TotalAmount,
-            payload.BookingId);
+            payload.BookingId,
+            $"cid:{qrContentId}");
 
         await emailService.SendAsync(
             user.Email,
             GetFullName(user.FirstName, user.LastName),
             $"Biletiniz Onaylandı - {@event.Title}",
             html,
+            new[]
+            {
+                new EmailInlineAttachment(
+                    qrContentId,
+                    $"ticket-{payload.BookingId}.png",
+                    "image/png",
+                    qrPngBytes)
+            },
             ct);
     }
 
@@ -204,6 +221,7 @@ public sealed class NotificationKafkaConsumer : BackgroundService
             GetFullName(user.FirstName, user.LastName),
             "Rezervasyonunuzun Süresi Doldu",
             html,
+            inlineAttachments: null,
             ct);
     }
 
@@ -243,6 +261,7 @@ public sealed class NotificationKafkaConsumer : BackgroundService
             GetFullName(user.FirstName, user.LastName),
             "Ödeme Başarısız",
             html,
+            inlineAttachments: null,
             ct);
     }
 

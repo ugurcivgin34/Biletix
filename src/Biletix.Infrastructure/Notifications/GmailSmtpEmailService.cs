@@ -4,7 +4,6 @@ using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
-using MimeKit.Text;
 
 namespace Biletix.Infrastructure.Notifications;
 
@@ -35,6 +34,7 @@ public sealed class GmailSmtpEmailService : IEmailService
         string toName,
         string subject,
         string htmlContent,
+        IReadOnlyCollection<EmailInlineAttachment>? inlineAttachments = null,
         CancellationToken ct = default)
     {
         var message = new MimeMessage();
@@ -43,10 +43,26 @@ public sealed class GmailSmtpEmailService : IEmailService
             GetRequiredEmailSetting("FromEmail")));
         message.To.Add(new MailboxAddress(toName, toEmail));
         message.Subject = subject;
-        message.Body = new TextPart(TextFormat.Html)
+
+        var bodyBuilder = new BodyBuilder
         {
-            Text = htmlContent
+            HtmlBody = htmlContent
         };
+
+        if (inlineAttachments is not null)
+        {
+            foreach (var attachment in inlineAttachments)
+            {
+                var resource = bodyBuilder.LinkedResources.Add(
+                    attachment.FileName,
+                    attachment.Content,
+                    ContentType.Parse(attachment.ContentType));
+                resource.ContentId = attachment.ContentId;
+                resource.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
+            }
+        }
+
+        message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(

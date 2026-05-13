@@ -16,13 +16,14 @@ public static class EmailTemplates
         DateTime eventDate,
         string venueName,
         decimal totalAmount,
-        Guid bookingId)
+        Guid bookingId,
+        string qrImageSource)
     {
         return Layout(
             "Biletiniz Onaylandı",
             $"""
             <p>Merhaba {Encode(firstName)},</p>
-            <p>Rezervasyonunuz başarıyla onaylandı. Etkinlik detaylarınız aşağıdadır.</p>
+            <p>Rezervasyonunuz başarıyla onaylandı. Aşağıdaki QR kodu etkinlik girişinde gösterin.</p>
             <div style="border:1px solid #e5e7eb;border-radius:8px;padding:18px;margin:20px 0;background:#f9fafb;">
               <h2 style="margin:0 0 12px;color:#111827;font-size:20px;">{Encode(eventTitle)}</h2>
               <p style="margin:8px 0;"><strong>Tarih:</strong> {eventDate:dd.MM.yyyy HH:mm}</p>
@@ -30,7 +31,14 @@ public static class EmailTemplates
               <p style="margin:8px 0;"><strong>Toplam Tutar:</strong> {totalAmount:N2} TL</p>
               <p style="margin:8px 0;"><strong>Rezervasyon No:</strong> {bookingId}</p>
             </div>
-            <p style="color:#4b5563;">QR biletiniz yakında gönderilecek. Etkinlik girişinde bu bileti ve kimliğinizi hazır bulundurunuz.</p>
+            <div style="text-align:center;margin:28px 0;">
+              <p style="color:#4b5563;margin-bottom:14px;font-weight:700;">Giriş QR Kodunuz</p>
+              <img src="{Encode(qrImageSource)}" alt="QR Bilet" width="200" height="200" style="width:200px;height:200px;border:4px solid #111827;border-radius:8px;display:inline-block;" />
+              <p style="color:#6b7280;font-size:12px;margin-top:8px;">Bu kodu etkinlik girişinde okutun.</p>
+            </div>
+            <div style="background:#fff7ed;border-radius:8px;padding:12px;margin-top:16px;">
+              <p style="margin:0;font-size:13px;color:#9a3412;">Bu bileti başkasıyla paylaşmayın. QR kod kişiye özeldir.</p>
+            </div>
             """);
     }
 

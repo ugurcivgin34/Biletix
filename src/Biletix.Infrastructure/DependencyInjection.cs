@@ -9,6 +9,7 @@ using Biletix.Infrastructure.Payment;
 using Biletix.Infrastructure.Persistence;
 using Biletix.Infrastructure.Redis;
 using Biletix.Infrastructure.Search;
+using Biletix.Infrastructure.Tickets;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IWaitingQueueService, WaitingQueueService>();
         services.AddScoped<IPaymentService, StripePaymentService>();
         services.AddScoped<IEmailService, GmailSmtpEmailService>();
+        services.AddScoped<IQrTicketService, QrTicketService>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
