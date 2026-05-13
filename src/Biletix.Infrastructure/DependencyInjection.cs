@@ -1,6 +1,8 @@
 using Biletix.Application.Common.Interfaces;
 using Biletix.Infrastructure.Auth;
 using Biletix.Infrastructure.Messaging.Consumers;
+using Biletix.Infrastructure.Messaging.Producers;
+using Biletix.Infrastructure.Messaging.Workers;
 using Biletix.Infrastructure.Payment;
 using Biletix.Infrastructure.Persistence;
 using Biletix.Infrastructure.Redis;
@@ -42,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<IWaitingQueueService, WaitingQueueService>();
         services.AddScoped<IPaymentService, StripePaymentService>();
+        services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         var elasticsearchUrl = configuration["Elasticsearch:Url"]!;
         var elasticsearchSettings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))
@@ -51,6 +54,7 @@ public static class DependencyInjection
         services.AddSingleton<ElasticsearchIndexInitializer>();
         services.AddScoped<IEventSearchService, ElasticsearchEventSearchService>();
         services.AddHostedService<EventCdcConsumer>();
+        services.AddHostedService<OutboxRelayWorker>();
 
         return services;
     }
