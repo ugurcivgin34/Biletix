@@ -8,7 +8,7 @@ curl -X POST http://localhost:8083/connectors \
     "config": {
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "database.hostname": "postgres",
-      "database.port": "5433",
+      "database.port": "5432",
       "database.user": "biletix",
       "database.password": "biletix123",
       "database.dbname": "biletix",
