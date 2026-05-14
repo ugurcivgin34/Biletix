@@ -1,18 +1,24 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { bookingsApi, type CheckoutRequest } from "@/lib/api/bookings"
 
+export const bookingKeys = {
+  all: ["bookings"] as const,
+  myBookings: () => ["bookings", "my"] as const,
+  detail: (id: string) => ["bookings", id] as const,
+}
+
 export function useMyBookings() {
   return useQuery({
-    queryKey: ["bookings", "my"],
+    queryKey: bookingKeys.myBookings(),
     queryFn: bookingsApi.getMyBookings,
   })
 }
 
 export function useBooking(id: string) {
   return useQuery({
-    queryKey: ["bookings", id],
+    queryKey: bookingKeys.detail(id),
     queryFn: () => bookingsApi.getById(id),
-    enabled: Boolean(id),
+    enabled: !!id,
   })
 }
 

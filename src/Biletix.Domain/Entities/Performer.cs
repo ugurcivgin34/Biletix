@@ -57,4 +57,14 @@ public class Performer : AggregateRoot<Guid>
             UpdatedAt = utcNow
         };
     }
+
+    /// <summary>
+    /// Performer icin opsiyonel gorsel adresini gunceller.
+    /// </summary>
+    /// <param name="imageUrl">Yeni gorsel adresi.</param>
+    public void SetImageUrl(string? imageUrl)
+    {
+        ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

@@ -1,3 +1,4 @@
+using Biletix.Application.Common.Interfaces;
 using Biletix.Domain.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -5,32 +6,37 @@ using Microsoft.Extensions.Logging;
 namespace Biletix.Application.Features.Events.EventHandlers;
 
 /// <summary>
-/// Etkinlik iptal edildiginde manuel Elasticsearch silme yerine CDC akisini loglar.
+/// Etkinlik iptal edildiginde arama indeksinden siler.
 /// </summary>
 public sealed class EventCancelledDomainEventHandler : INotificationHandler<EventCancelledDomainEvent>
 {
+    private readonly IEventSearchService _eventSearchService;
     private readonly ILogger<EventCancelledDomainEventHandler> _logger;
 
     /// <summary>
-    /// Handler'in ihtiyac duydugu logger bagimliligini alir.
+    /// Handler'in ihtiyac duydugu bagimliliklari alir.
     /// </summary>
+    /// <param name="eventSearchService">Arama indeksinden silen servis.</param>
     /// <param name="logger">Domain event loglarini yazan logger.</param>
-    public EventCancelledDomainEventHandler(ILogger<EventCancelledDomainEventHandler> logger)
+    public EventCancelledDomainEventHandler(
+        IEventSearchService eventSearchService,
+        ILogger<EventCancelledDomainEventHandler> logger)
     {
+        _eventSearchService = eventSearchService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Etkinligin iptal edildigini loglar; Elasticsearch senkronizasyonunu CDC consumer ustlenir.
+    /// Etkinligi Elasticsearch'ten siler.
     /// </summary>
     /// <param name="notification">Etkinlik iptal domain event'i.</param>
     /// <param name="cancellationToken">Iptal bildirimi.</param>
-    public Task Handle(EventCancelledDomainEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(EventCancelledDomainEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "Event {Id} cancelled - ES sync handled by CDC",
-            notification.EventId);
+        await _eventSearchService.DeleteEventAsync(notification.EventId, cancellationToken);
 
-        return Task.CompletedTask;
+        _logger.LogInformation(
+            "Event {Id} cancelled and removed from Elasticsearch",
+            notification.EventId);
     }
 }

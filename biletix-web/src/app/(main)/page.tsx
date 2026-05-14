@@ -12,16 +12,16 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12">
-      <section className="relative -mx-4 overflow-hidden rounded-2xl bg-gray-950 px-4 py-20 text-white">
+      <section className="relative -mx-4 overflow-hidden rounded-2xl bg-gray-950 px-4 py-14 text-white sm:py-20">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(17,24,39,1)_0%,rgba(127,29,29,0.92)_52%,rgba(17,24,39,1)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-red-300/40" />
 
         <div className="relative mx-auto max-w-3xl space-y-6 text-center">
           <div className="mb-4 flex items-center justify-center gap-3">
             <Ticket className="text-red-300" size={40} />
-            <h1 className="text-5xl font-bold">Biletix</h1>
+            <h1 className="text-4xl font-bold sm:text-5xl">Biletix</h1>
           </div>
-          <p className="text-xl text-gray-200">
+          <p className="text-lg text-gray-200 sm:text-xl">
             Konser, tiyatro, spor ve daha fazlası için
             <br />
             en iyi biletler burada!
@@ -51,7 +51,7 @@ export default function HomePage() {
       </section>
 
       <section>
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <h2 className="text-2xl font-bold">Yaklaşan Etkinlikler</h2>
           <Link href="/events" className="text-sm text-red-500 hover:underline">
             Tümünü gör →

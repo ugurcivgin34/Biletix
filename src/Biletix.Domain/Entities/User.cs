@@ -122,6 +122,16 @@ public class User : AggregateRoot<Guid>
     }
 
     /// <summary>
+    /// Kullanicinin sistem rolunu gunceller.
+    /// </summary>
+    /// <param name="role">Atanacak yeni rol.</param>
+    public void SetRole(UserRole role)
+    {
+        Role = role;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
     /// Kullanici hesabini pasif hale getirir.
     /// </summary>
     public void Deactivate()

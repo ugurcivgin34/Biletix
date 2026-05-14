@@ -8,8 +8,30 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Biletix - Etkinlik Biletleri",
-  description: "Konser, tiyatro ve daha fazlası için bilet satın al",
+  title: {
+    default: "Biletix — Etkinlik Biletleri",
+    template: "%s | Biletix",
+  },
+  description: "Konser, tiyatro, spor ve daha fazlası için en iyi biletler Biletix'te!",
+  keywords: ["bilet", "konser", "etkinlik", "tiyatro", "spor"],
+  authors: [{ name: "Biletix" }],
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: "https://biletix.com",
+    siteName: "Biletix",
+    title: "Biletix — Etkinlik Biletleri",
+    description: "Konser, tiyatro ve daha fazlası için bilet satın al",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Biletix",
+    description: "Etkinlik biletleri",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
