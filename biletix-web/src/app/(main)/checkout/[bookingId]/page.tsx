@@ -21,11 +21,12 @@ interface CheckoutPageProps {
 
 function CheckoutContent({ bookingId }: { bookingId: string }) {
   const searchParams = useSearchParams()
-  const clientSecret = searchParams.get("secret")
+  const secretFromUrl = searchParams.get("secret")
   const router = useRouter()
   const { toast } = useToast()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [event, setEvent] = useState<EventDetail | null>(null)
+  const [clientSecret, setClientSecret] = useState(secretFromUrl)
   const [isLoading, setIsLoading] = useState(true)
 
   const stripePromise = useMemo(
@@ -41,6 +42,11 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
 
         const loadedEvent = await eventsApi.getById(loadedBooking.eventId)
         setEvent(loadedEvent)
+
+        if (loadedBooking.status === "Pending" && !secretFromUrl) {
+          const paymentIntent = await bookingsApi.createPaymentIntent(bookingId)
+          setClientSecret(paymentIntent.clientSecret)
+        }
       } catch {
         toast({
           title: "Hata",
@@ -54,14 +60,23 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
     }
 
     loadCheckout()
-  }, [bookingId, router, toast])
+  }, [bookingId, router, secretFromUrl, toast])
 
-  const handleSuccess = () => {
-    toast({
-      title: "Ödeme alındı!",
-      description: "Biletiniz e-posta adresinize gönderilecek.",
-    })
-    router.push(`/checkout/${bookingId}/success`)
+  const handleSuccess = async (paymentIntentId: string) => {
+    try {
+      await bookingsApi.confirmPayment(bookingId, paymentIntentId)
+      toast({
+        title: "Ödeme alındı!",
+        description: "Biletiniz hazırlandı.",
+      })
+      router.push(`/checkout/${bookingId}/success`)
+    } catch {
+      toast({
+        title: "Ödeme alındı",
+        description: "Rezervasyon onayı bekleniyor. Birazdan tekrar kontrol edin.",
+      })
+      router.push(`/checkout/${bookingId}/success`)
+    }
   }
 
   const handleError = (message: string) => {
@@ -70,6 +85,23 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
       description: message,
       variant: "destructive",
     })
+  }
+
+  const refreshPaymentIntent = async () => {
+    try {
+      const paymentIntent = await bookingsApi.createPaymentIntent(bookingId)
+      setClientSecret(paymentIntent.clientSecret)
+      toast({
+        title: "Ödeme formu yenilendi",
+        description: "Yeni ödeme oturumu hazırlandı.",
+      })
+    } catch {
+      toast({
+        title: "Hata",
+        description: "Yeni ödeme oturumu oluşturulamadı.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (isLoading) {
@@ -121,6 +153,7 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
           <div className="rounded-xl border bg-white p-6">
             <h2 className="mb-4 font-semibold">Kart Bilgileri</h2>
             <Elements
+              key={clientSecret}
               stripe={stripePromise}
               options={{
                 clientSecret,
@@ -140,6 +173,7 @@ function CheckoutContent({ bookingId }: { bookingId: string }) {
                 bookingId={bookingId}
                 onSuccess={handleSuccess}
                 onError={handleError}
+                onPaymentIntentRefresh={refreshPaymentIntent}
               />
             </Elements>
           </div>

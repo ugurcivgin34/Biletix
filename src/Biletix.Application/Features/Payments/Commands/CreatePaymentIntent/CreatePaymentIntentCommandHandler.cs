@@ -72,7 +72,10 @@ public sealed class CreatePaymentIntentCommandHandler
             throw new DomainException("Booking has expired. Please make a new reservation.");
         }
 
-        var idempotencyKey = $"payment-{booking.Id}";
+        var idempotencyKey = string.IsNullOrWhiteSpace(booking.PaymentIntentId)
+            ? $"payment-{booking.Id}"
+            : $"payment-{booking.Id}-{Guid.NewGuid():N}";
+
         var result = await _paymentService.CreatePaymentIntentAsync(
             booking.Id,
             booking.TotalAmount,

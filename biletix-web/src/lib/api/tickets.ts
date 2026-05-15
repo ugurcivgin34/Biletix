@@ -15,6 +15,13 @@ export interface ValidateTicketResponse {
 }
 
 export const ticketsApi = {
+  getQr: async (bookingId: string): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`/api/tickets/${bookingId}/qr`, {
+      responseType: "blob",
+    })
+    return data
+  },
+
   validate: async (qrToken: string, scannedBy: string): Promise<ValidateTicketResponse> => {
     const { data } = await apiClient.post<ValidateTicketResponse>("/api/tickets/validate", {
       qrToken,

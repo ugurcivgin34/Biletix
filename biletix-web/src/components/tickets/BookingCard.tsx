@@ -10,10 +10,12 @@ import {
   QrCode,
   XCircle,
 } from "lucide-react"
+import axios from "axios"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useAuthStore } from "@/lib/stores/authStore"
+import { useToast } from "@/hooks/use-toast"
+import { ticketsApi } from "@/lib/api/tickets"
 import type { Booking } from "@/lib/types/booking"
 import { formatDate, formatPrice } from "@/lib/utils/format"
 
@@ -48,10 +50,9 @@ export function BookingCard({ booking }: Props) {
   const [showQr, setShowQr] = useState(false)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [isQrLoading, setIsQrLoading] = useState(false)
-  const accessToken = useAuthStore((state) => state.accessToken)
+  const { toast } = useToast()
   const config = statusConfig[booking.status]
   const StatusIcon = config.icon
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5157"
 
   useEffect(() => {
     return () => {
@@ -60,15 +61,23 @@ export function BookingCard({ booking }: Props) {
   }, [qrUrl])
 
   const fetchQrBlob = async () => {
-    const response = await fetch(`${apiUrl}/api/tickets/${booking.id}/qr`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    return ticketsApi.getQr(booking.id)
+  }
+
+  const showQrError = (error: unknown) => {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    const message =
+      status === 400
+        ? "QR bilet henüz hazır değil. Ödeme onayı birkaç saniye sürebilir."
+        : status === 401
+          ? "Oturumunuz doğrulanamadı. Tekrar giriş yapıp deneyin."
+          : "QR bilet alınamadı. Lütfen biraz sonra tekrar deneyin."
+
+    toast({
+      title: "QR alınamadı",
+      description: message,
+      variant: "destructive",
     })
-
-    if (!response.ok) {
-      throw new Error("QR bilet alınamadı")
-    }
-
-    return response.blob()
   }
 
   const handleToggleQr = async () => {
@@ -84,21 +93,28 @@ export function BookingCard({ booking }: Props) {
     try {
       const blob = await fetchQrBlob()
       setQrUrl(URL.createObjectURL(blob))
+    } catch (error) {
+      setShowQr(false)
+      showQrError(error)
     } finally {
       setIsQrLoading(false)
     }
   }
 
   const handleDownload = async () => {
-    const blob = qrUrl ? await fetch(qrUrl).then((response) => response.blob()) : await fetchQrBlob()
-    const objectUrl = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = objectUrl
-    link.download = `ticket-${booking.id}.png`
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(objectUrl)
+    try {
+      const blob = qrUrl ? await fetch(qrUrl).then((response) => response.blob()) : await fetchQrBlob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = objectUrl
+      link.download = `ticket-${booking.id}.png`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(objectUrl)
+    } catch (error) {
+      showQrError(error)
+    }
   }
 
   return (

@@ -14,6 +14,19 @@ export interface CheckoutResponse {
   message: string
 }
 
+export interface PaymentIntentResponse {
+  bookingId: string
+  clientSecret: string
+  paymentIntentId: string
+  amount: number
+  expiresAt?: string
+}
+
+export interface ConfirmPaymentResponse {
+  bookingId: string
+  status: string
+}
+
 export const bookingsApi = {
   checkout: async (request: CheckoutRequest): Promise<CheckoutResponse> => {
     const idempotencyKey = uuidv4()
@@ -37,5 +50,22 @@ export const bookingsApi = {
     const { data } = await apiClient.get(`/api/payments/booking/${bookingId}`)
     return data
   },
-}
 
+  createPaymentIntent: async (bookingId: string): Promise<PaymentIntentResponse> => {
+    const { data } = await apiClient.post<PaymentIntentResponse>("/api/payments/create-intent", {
+      bookingId,
+    })
+    return data
+  },
+
+  confirmPayment: async (
+    bookingId: string,
+    paymentIntentId: string
+  ): Promise<ConfirmPaymentResponse> => {
+    const { data } = await apiClient.post<ConfirmPaymentResponse>("/api/payments/confirm-client", {
+      bookingId,
+      paymentIntentId,
+    })
+    return data
+  },
+}

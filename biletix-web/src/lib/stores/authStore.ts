@@ -2,6 +2,16 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { User } from "@/lib/types/auth"
 
+const authCookieMaxAge = 60 * 60 * 24 * 7
+
+export function setAccessTokenCookie(accessToken: string) {
+  document.cookie = `accessToken=${accessToken}; path=/; max-age=${authCookieMaxAge}; SameSite=Lax`
+}
+
+export function clearAccessTokenCookie() {
+  document.cookie = "accessToken=; path=/; max-age=0; SameSite=Lax"
+}
+
 interface AuthState {
   user: User | null
   accessToken: string | null
@@ -22,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.setItem("accessToken", accessToken)
           localStorage.setItem("refreshToken", refreshToken)
-          document.cookie = `accessToken=${accessToken}; path=/`
+          setAccessTokenCookie(accessToken)
         }
 
         set({ user, accessToken, refreshToken, isAuthenticated: true })
@@ -31,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken")
           localStorage.removeItem("refreshToken")
-          document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          clearAccessTokenCookie()
         }
 
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false })

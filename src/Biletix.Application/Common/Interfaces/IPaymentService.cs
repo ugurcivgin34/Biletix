@@ -22,6 +22,16 @@ public interface IPaymentService
         CancellationToken ct = default);
 
     /// <summary>
+    /// Odeme niyetinin guncel durumunu odeme saglayicisindan okur.
+    /// </summary>
+    /// <param name="paymentIntentId">Sorgulanacak payment intent kimligi.</param>
+    /// <param name="ct">Iptal bildirimi.</param>
+    /// <returns>Payment intent durum bilgisi.</returns>
+    Task<PaymentIntentStatusResult> GetPaymentIntentStatusAsync(
+        string paymentIntentId,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Odeme niyetini iptal eder.
     /// </summary>
     /// <param name="paymentIntentId">Iptal edilecek payment intent kimligi.</param>
@@ -40,3 +50,14 @@ public sealed record CreatePaymentIntentResult(
     string PaymentIntentId,
     string ClientSecret,
     string Status);
+
+/// <summary>
+/// Odeme niyeti durum sorgusu sonucunu temsil eder.
+/// </summary>
+/// <param name="PaymentIntentId">Odeme saglayicisindaki payment intent kimligi.</param>
+/// <param name="Status">Payment intent durumu.</param>
+/// <param name="BookingId">Payment intent metadata'sindaki rezervasyon kimligi.</param>
+public sealed record PaymentIntentStatusResult(
+    string PaymentIntentId,
+    string Status,
+    Guid? BookingId);

@@ -58,6 +58,24 @@ public sealed class StripePaymentService : IPaymentService
     }
 
     /// <inheritdoc />
+    public async Task<PaymentIntentStatusResult> GetPaymentIntentStatusAsync(
+        string paymentIntentId,
+        CancellationToken ct = default)
+    {
+        var service = new PaymentIntentService(_stripeClient);
+        var intent = await service.GetAsync(paymentIntentId, cancellationToken: ct);
+
+        Guid? bookingId = null;
+        if (intent.Metadata.TryGetValue("bookingId", out var bookingIdText) &&
+            Guid.TryParse(bookingIdText, out var parsedBookingId))
+        {
+            bookingId = parsedBookingId;
+        }
+
+        return new PaymentIntentStatusResult(intent.Id, intent.Status, bookingId);
+    }
+
+    /// <inheritdoc />
     public async Task<bool> CancelPaymentIntentAsync(string paymentIntentId, CancellationToken ct = default)
     {
         var service = new PaymentIntentService(_stripeClient);
